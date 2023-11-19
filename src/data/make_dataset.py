@@ -5,6 +5,7 @@ from pathlib import Path
 from sys import argv
 from os.path import exists
 from typing import Callable
+from subprocess import Popen
 
 from opendatasets import download as kaggle_download
 
@@ -29,12 +30,34 @@ def download_flickr_dataset(dataset_path: str) -> None:
     get_current_logger().info("Flickr dataset has been successfully downloaded")
 
 
+def execute_bash_command(command: str) -> None:
+    Popen(["/bin/bash", "-c", command]).wait()
+
+
+def decompress_liu4k_dataset(dataset_path: str) -> None:
+    for item in ["Animal", "Building", "Mountain", "Street"]:
+        get_current_logger().info(f"Started concatenating LIU4K's {item} zip pieces")
+        execute_bash_command(
+            f"zip -s 0 {dataset_path}/{item}.zip -O {dataset_path}/{item}_temp.zip"
+        )
+        get_current_logger().info(f"Finished concatenating LIU4K's {item} zip pieces")
+        execute_bash_command(f"rm {dataset_path}/{item}.*")
+        get_current_logger().info(f"Removed LIU4K's {item} zip pieces")
+        get_current_logger().info(f"Started uzipping LIU4K's {item}")
+        execute_bash_command(f"unzip {dataset_path}/{item}_temp.zip -d {dataset_path}")
+        get_current_logger().info(f"Finished uzipping LIU4K's {item}")
+        execute_bash_command(f"rm {dataset_path}/{item}_temp.zip")
+        get_current_logger().info(f"Removed LIU4K's {item} temp zip")
+
+
 def download_liu4k_dataset(dataset_path: str) -> None:
     get_current_logger().info("Downloading LIU4K dataset")
     gdrive_download(
         LIU4K_DATASET_URL, output=dataset_path, quiet=False, use_cookies=False
     )
     get_current_logger().info("LIU4K dataset has been successfully downloaded")
+    decompress_liu4k_dataset(f"{dataset_path}/{LIU4K_DATASET_DIR}")
+    get_current_logger().info("LIU4K dataset has been successfully decompressed")
 
 
 def resolve_raw_dataset_download(

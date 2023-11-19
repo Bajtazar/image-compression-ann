@@ -1,7 +1,6 @@
 from sys import argv
 from functools import cache
 from logging import Logger, getLogger, basicConfig, INFO
-
 from functools import wraps
 from typing import Callable, Any, TypeVar
 

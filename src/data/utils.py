@@ -3,6 +3,8 @@ from functools import cache
 from logging import Logger, getLogger, basicConfig, INFO
 from functools import wraps
 from typing import Callable, Any, TypeVar
+from contextlib import redirect_stdout
+from io import StringIO
 
 
 Tp = TypeVar("Tp")

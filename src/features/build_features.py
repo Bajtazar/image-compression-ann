@@ -13,6 +13,8 @@ from torchvision.io import read_image, ImageReadMode, write_png
 
 from torch import uint8, Tensor
 
+from PIL import Image
+
 
 FLICKR_DATASET_DIR: str = "flickr-image-dataset"
 FLICKR_RAW_DATASET_DIR: str = f"{FLICKR_DATASET_DIR}/flickr30k_images/flickr30k_images"
@@ -48,6 +50,32 @@ def prepate_dir(directory: str) -> None:
 def prepare_flickr30k(intermediate_dataset_path: str) -> None:
     get_current_logger().info("Destroying old flickr30k intermediate dataset")
     prepate_dir(f"{intermediate_dataset_path}/{FLICKR_DATASET_DIR}")
+
+
+def prepare_liu4k(intermediate_dataset_path: str) -> None:
+    get_current_logger().info("Destroying old LIU4K intermediate dataset")
+    prepate_dir(f"{intermediate_dataset_path}/{LIU4K_DATASET_DIR}")
+
+
+def new_dimensions(width: int, height: int, limit: int = 1200) -> tuple[int, int]:
+    if width > height:
+        return limit, height * limit // width
+    return width * limit // height, limit
+
+
+@redirect_stdout_to_logger()
+def create_intermediate_liu4k_set(
+    raw_dataset_path: str, intermediate_dataset_path: str
+) -> None:
+    int_path = f"{intermediate_dataset_path}/{LIU4K_DATASET_DIR}"
+    for root, _, files in walk(f"{raw_dataset_path}/{LIU4K_DATASET_DIR}"):
+        for file_path in files:
+            if ".png" not in file_path:
+                continue
+            image = Image.open(f"{root}/{file_path}")
+            output_path = f"{int_path}/{file_path}"
+            image.resize(new_dimensions(image.width, image.height)).save(output_path)
+            get_current_logger().info(f"Copying and resizing the {file_path}")
 
 
 def save_image(image: Tensor, file_path: str) -> None:
@@ -88,6 +116,14 @@ def main(
     split_dataset(
         f"{intermediate_dataset_path}/{FLICKR_DATASET_DIR}",
         f"{processed_dataset_path}/{FLICKR_DATASET_DIR}",
+        block_size,
+        block_overlap_size,
+    )
+    prepare_liu4k(intermediate_dataset_path)
+    create_intermediate_liu4k_set(raw_dataset_path, intermediate_dataset_path)
+    split_dataset(
+        f"{intermediate_dataset_path}/{LIU4K_DATASET_DIR}",
+        f"{processed_dataset_path}/{LIU4K_DATASET_DIR}",
         block_size,
         block_overlap_size,
     )

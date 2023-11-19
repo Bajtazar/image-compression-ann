@@ -21,12 +21,12 @@ FLICKR_RAW_DATASET_DIR: str = f"{FLICKR_DATASET_DIR}/flickr30k_images/flickr30k_
 LIU4K_DATASET_DIR: str = "LIU4K_v2_train"
 KODAK_DATASET_DIR: str = "kodak"
 
-INTERMEDIATE_FLICKR_SIZE: int = 10_000
-
 
 @redirect_stdout_to_logger()
 def create_intermediate_flickr30k_set(
-    raw_dataset_path: str, intermediate_dataset_path: str
+    raw_dataset_path: str,
+    intermediate_dataset_path: str,
+    intermediate_flickr_size: int = 10_000,
 ) -> None:
     raw_path = f"{raw_dataset_path}/{FLICKR_RAW_DATASET_DIR}"
     files = [
@@ -34,7 +34,7 @@ def create_intermediate_flickr30k_set(
         for file_path in chain(*[file_ for *_, file_ in walk(raw_path)])
         if ".jpg" in file_path
     ]
-    for file_path in sample(files, INTERMEDIATE_FLICKR_SIZE):
+    for file_path in sample(files, intermediate_flickr_size):
         copyfile(
             f"{raw_path}/{file_path}",
             f"{intermediate_dataset_path}/{FLICKR_DATASET_DIR}/{file_path}",
@@ -110,15 +110,19 @@ def split_dataset(
 @click.argument("processed_dataset_path", type=click.Path())
 @click.option("--block_size", type=int, default=128)
 @click.option("--block_overlap_size", type=int, default=0)
+@click.option("--intermediate_flickr_size", type=int, default=10_000)
 def main(
     raw_dataset_path: str,
     intermediate_dataset_path: str,
     processed_dataset_path: str,
     block_size: int,
     block_overlap_size: int,
+    intermediate_flickr_size: int,
 ) -> None:
     prepare_flickr30k(intermediate_dataset_path)
-    create_intermediate_flickr30k_set(raw_dataset_path, intermediate_dataset_path)
+    create_intermediate_flickr30k_set(
+        raw_dataset_path, intermediate_dataset_path, intermediate_flickr_size
+    )
     split_dataset(
         f"{intermediate_dataset_path}/{FLICKR_DATASET_DIR}",
         f"{processed_dataset_path}/{FLICKR_DATASET_DIR}",

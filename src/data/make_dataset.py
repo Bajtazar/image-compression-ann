@@ -3,6 +3,7 @@ import click
 
 from pathlib import Path
 from os.path import exists
+from os import makedirs
 from typing import Callable
 from subprocess import Popen
 
@@ -10,7 +11,9 @@ from opendatasets import download as kaggle_download
 
 from gdown import download_folder as gdrive_download
 
-from utils import get_current_logger
+from wget import download as wget_download
+
+from utils import get_current_logger, redirect_stdout_to_logger
 
 
 FLICKR_DATASET_URL: str = (
@@ -19,8 +22,12 @@ FLICKR_DATASET_URL: str = (
 LIU4K_DATASET_URL: str = (
     "https://drive.google.com/drive/folders/1FtVQtY2t_ecuy_gzJqZ-CatqrJBAdq_d"
 )
+KODAK_DATASET_URL_CTRL: Callable[
+    [int], str
+] = lambda id: f"https://r0k.us/graphics/kodak/kodak/kodim{id:02}.png"
 FLICKR_DATASET_DIR: str = "flickr-image-dataset"
 LIU4K_DATASET_DIR: str = "LIU4K_v2_train"
+KODAK_DATASET_DIR: str = "kodak"
 
 
 @redirect_stdout_to_logger()
@@ -83,6 +90,16 @@ def resolve_raw_dataset_download(
         get_current_logger().info(f"{dataset_name} dataset has been found")
 
 
+@redirect_stdout_to_logger()
+def download_kodak_dataset(dataset_path: str) -> None:
+    get_current_logger().info("Downloading KODAK dataset")
+    kodak_dir = f"{dataset_path}/{KODAK_DATASET_DIR}"
+    makedirs(kodak_dir, exist_ok=True)
+    for i in range(1, 25):
+        wget_download(KODAK_DATASET_URL_CTRL(i), out=f"{kodak_dir}/kodak{i:02}.png")
+    get_current_logger().info("KODAK dataset has been successfully downloaded")
+
+
 @click.command()
 @click.argument("raw_datasets_path", type=click.Path())
 @click.option("--always_download", type=bool, default=False)
@@ -100,6 +117,13 @@ def main(raw_datasets_path: str, always_download: bool) -> None:
         "LIU4K",
         always_download,
         download_liu4k_dataset,
+    )
+    resolve_raw_dataset_download(
+        raw_datasets_path,
+        KODAK_DATASET_DIR,
+        "Kodak",
+        always_download,
+        download_kodak_dataset,
     )
     get_current_logger().info("Done")
 

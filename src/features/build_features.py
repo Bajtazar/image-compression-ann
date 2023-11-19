@@ -19,6 +19,7 @@ from PIL import Image
 FLICKR_DATASET_DIR: str = "flickr-image-dataset"
 FLICKR_RAW_DATASET_DIR: str = f"{FLICKR_DATASET_DIR}/flickr30k_images/flickr30k_images"
 LIU4K_DATASET_DIR: str = "LIU4K_v2_train"
+KODAK_DATASET_DIR: str = "kodak"
 
 INTERMEDIATE_FLICKR_SIZE: int = 10_000
 
@@ -55,6 +56,11 @@ def prepare_flickr30k(intermediate_dataset_path: str) -> None:
 def prepare_liu4k(intermediate_dataset_path: str) -> None:
     get_current_logger().info("Destroying old LIU4K intermediate dataset")
     prepate_dir(f"{intermediate_dataset_path}/{LIU4K_DATASET_DIR}")
+
+
+def prepare_kodak(processed_dataset_path: str) -> None:
+    get_current_logger().info("Destroying old Kodak processed dataset")
+    prepate_dir(f"{processed_dataset_path}/{KODAK_DATASET_DIR}")
 
 
 def new_dimensions(width: int, height: int, limit: int = 1200) -> tuple[int, int]:
@@ -124,6 +130,13 @@ def main(
     split_dataset(
         f"{intermediate_dataset_path}/{LIU4K_DATASET_DIR}",
         f"{processed_dataset_path}/{LIU4K_DATASET_DIR}",
+        block_size,
+        block_overlap_size,
+    )
+    prepare_kodak(processed_dataset_path)
+    split_dataset(
+        f"{raw_dataset_path}/{KODAK_DATASET_DIR}",
+        f"{processed_dataset_path}/{KODAK_DATASET_DIR}",
         block_size,
         block_overlap_size,
     )

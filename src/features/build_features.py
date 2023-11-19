@@ -1,7 +1,5 @@
 import click
 
-from utils import get_current_logger
-
 from os import walk, makedirs
 from os.path import exists
 from itertools import chain
@@ -9,6 +7,7 @@ from random import sample
 from shutil import copyfile, rmtree
 
 from tiles import split_image
+from utils import get_current_logger, redirect_stdout_to_logger
 
 from torchvision.io import read_image, ImageReadMode, write_png
 
@@ -22,6 +21,7 @@ LIU4K_DATASET_DIR: str = "LIU4K_v2_train"
 INTERMEDIATE_FLICKR_SIZE: int = 10_000
 
 
+@redirect_stdout_to_logger()
 def create_intermediate_flickr30k_set(
     raw_dataset_path: str, intermediate_dataset_path: str
 ) -> None:

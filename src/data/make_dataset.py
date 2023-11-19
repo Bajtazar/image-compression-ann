@@ -23,6 +23,7 @@ FLICKR_DATASET_DIR: str = "flickr-image-dataset"
 LIU4K_DATASET_DIR: str = "LIU4K_v2_train"
 
 
+@redirect_stdout_to_logger()
 def download_flickr_dataset(dataset_path: str) -> None:
     get_current_logger().info("Downloading Flickr dataset")
     kaggle_download(FLICKR_DATASET_URL, dataset_path)
@@ -49,6 +50,7 @@ def decompress_liu4k_dataset(dataset_path: str) -> None:
         get_current_logger().info(f"Removed LIU4K's {item} temp zip")
 
 
+@redirect_stdout_to_logger()
 def download_liu4k_dataset(dataset_path: str) -> None:
     get_current_logger().info("Downloading LIU4K dataset")
     gdrive_download(

@@ -1,8 +1,9 @@
 from sys import argv
-from functools import cache
+from functools import cache, wraps
 from logging import Logger, getLogger, basicConfig, INFO
-from functools import wraps
 from typing import Callable, Any, TypeVar
+from contextlib import redirect_stdout
+from io import StringIO
 
 
 Tp = TypeVar("Tp")
@@ -31,3 +32,19 @@ def __initialize_logger() -> None:
 @only_once(__initialize_logger)
 def get_current_logger() -> Logger:
     return getLogger(executable_name())
+
+
+def redirect_stdout_to_logger(level: int = INFO):
+    def internal_wrapper(function: Callable[[...], Any]) -> Callable[[...], Any]:
+        @wraps(function)
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
+            with redirect_stdout(StringIO()) as handle:
+                try:
+                    value = function(*args, **kwargs)
+                finally:
+                    get_current_logger().log(level, handle.getvalue())
+            return value
+
+        return wrapper
+
+    return internal_wrapper

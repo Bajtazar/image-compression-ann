@@ -42,7 +42,8 @@ Project Organization
     │   │   ├── gym        <- module with neural network training suite
     │   │   ├── benchmarks <- module with neural network benchmarking suite
     │   │   ├── benchmark_model.py
-    │   │   └── train_model.py
+    │   │   ├── train_model.py
+    │   │   └── update_config.py
     │   │
     │   └── visualization  <- Scripts to create exploratory and results oriented visualizations
     │       └── visualize.py

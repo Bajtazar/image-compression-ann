@@ -8,7 +8,7 @@ from datetime import datetime
 from gc import collect
 from contextlib import contextmanager
 from copy import deepcopy
-from os import environ
+from os import environ, makedirs
 
 from torch import no_grad, isnan
 from torch.optim import Adam
@@ -161,6 +161,7 @@ class Gym:
             handle.write(f"{time},{epoch},{train_loss},{val_loss}\n")
 
     def __create_csv_header(self, log_path: str) -> None:
+        makedirs(self.__params.output_dir, exist_ok=True)
         with open(log_path, "a") as handle:
             handle.write("Time,Epoch,Train loss,Validation loss\n")
 

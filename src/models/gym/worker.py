@@ -3,10 +3,7 @@ import os
 
 from gym.gym import Gym
 from gym.data_manager import DataManager
-from gym.loss_functions import (
-    entropy_reconstruction_loss,
-    NormalDistributionRateDistortionLoss,
-)
+from gym.loss_function import NormalDistributionRateDistortionLoss
 from gym.quantization import FuzzyQuantization, Quantization
 from gym.distributed import init_distributed, print_on_master
 from gym.config import get_config
@@ -26,7 +23,6 @@ def worker(is_distributed: bool) -> None:
         train_dataset_split_coeff=float(
             config["environment"]["training_validation_set_split_coeff"]
         ),
-        block_size=int(config["environment"]["block_size"]),
         workers=int(config["environment"]["workers"]),
         distributed=is_distributed,
     )

@@ -14,7 +14,7 @@ from torch.nn import (
     Linear,
     BatchNorm1d,
 )
-from torch.nn import Conv3d, ConvTranspose3d
+from torch.nn import Conv3d, ConvTranspose3d, Softplus
 from torch import Tensor, unbind, flatten, cat, chunk, stack, split, clamp
 
 import pytorch_wavelets as wvlt

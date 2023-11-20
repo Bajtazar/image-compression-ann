@@ -21,9 +21,19 @@ endif
 #################################################################################
 
 ## Install Python Dependencies
-requirements: test_environment
+requirements: test_environment install_external
 	$(PYTHON_INTERPRETER) -m pip install -U pip setuptools wheel
 	$(PYTHON_INTERPRETER) -m pip install -r requirements.txt
+
+## Installs external dependencies
+install_external: update_dependencies
+	$(PYTHON_INTERPRETER) -m pip install -r external/pytorch_dwt/requirements.txt
+	$(PYTHON_INTERPRETER) -m pip install external/pytorch_dwt
+	$(PYTHON_INTERPRETER) -m pip install external/pytorch_gdn
+
+## Updates dependencies
+update_dependencies:
+	git submodule update --init --recursive
 
 ## Make Dataset
 data: requirements

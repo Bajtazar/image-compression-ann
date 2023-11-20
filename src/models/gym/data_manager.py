@@ -23,7 +23,6 @@ class DataManager:
     test_set_path: str
     train_set_path: str
     batch_size: int
-    block_size: int
     block_overlap_size: int
     train_dataset_split_coeff: float
     platform: device = device("cuda" if cuda.is_available() else "cpu")

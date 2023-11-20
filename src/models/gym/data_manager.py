@@ -17,64 +17,22 @@ from gym.tiles import split_image, concatenate_image
 
 Transform = TypeVar('Transform')
 
-SUBFOLDER: str = 'dataset'
-SPLITTED_PREFIX: str = 'splitted'
-
 
 @dataclass
 class DataManager:
     test_set_path: str
     train_set_path: str
     batch_size: int
-    block_size: int = 128
-    block_overlap_size: int = 2
+    block_size: int
+    block_overlap_size: int
+    train_dataset_split_coeff: float
     platform: device = device('cuda' if cuda.is_available() else 'cpu')
-    train_dataset_split_coeff: float = 0.8
     workers: int = 0
     distributed: bool = True
 
     def __post_init__(self) -> None:
         self.__load_train_dataset()
         self.__load_test_dataset()
-
-    def __find_subfolder(self, path: str) -> str:
-        for root, dirs, _ in os.walk(path):
-            if len(dirs) > 1:
-                raise RuntimeError(f'Invalid number of folders in {path}')
-            return f'{root}/{dirs[0]}'
-        raise RuntimeError(f'Invalid number of folders in {path}')
-
-    def __save_image(self, image: Tensor, path: str) -> None:
-        extension = path.split('.')[-1].lower()
-        if extension == 'png':
-            write_png(image, path)
-        else:
-            write_jpeg(image, path)
-
-    def __create_splitted(self, path: str, split_path: str) -> None:
-        subfolder = self.__find_subfolder(path)
-        os.mkdir(split_path)
-        os.mkdir(f'{split_path}/{SUBFOLDER}')
-        for root, _, files in os.walk(subfolder):
-            for file in files:
-                image = read_image(f'{root}/{file}', ImageReadMode.RGB)
-                splitted = split_image(
-                    image, self.block_size, self.block_overlap_size)
-                for i, image in enumerate(splitted):
-                    fnme = file.split('.')
-                    self.__save_image(
-                        image.to(uint8), f'{split_path}/{SUBFOLDER}/{".".join(fnme[:-1])}_{i}.{fnme[-1]}')
-
-    def __load_dataset(self, path: str) -> JitImageSet:
-        splitted_path = f'{SPLITTED_PREFIX}_' + path
-        if is_main_process():
-            if not os.path.exists(path):
-                raise RuntimeError(f'"{path}" dataset does not exist')
-            if not os.path.exists(splitted_path):
-                self.__create_splitted(path, splitted_path)
-        if self.distributed:
-            barrier()
-        return JitImageSet(splitted_path)
 
     def __load_distributed_train_dataset(self, trainset: JitImageSet, valset: JitImageSet) -> None:
         self.__train_sampler = DistributedSampler(dataset=trainset, shuffle=True)
@@ -91,7 +49,7 @@ class DataManager:
                                             drop_last=True, num_workers=self.workers, shuffle=False)
 
     def __load_train_dataset(self) -> None:
-        dataset = self.__load_dataset(self.train_set_path)
+        dataset = JitImageSet(self.train_set_path)
         train_size = int(len(dataset) * self.train_dataset_split_coeff)
         trainset, valset = random_split(
             dataset, (train_size, len(dataset) - train_size))
@@ -101,7 +59,7 @@ class DataManager:
             self.__load_sequential_train_dataset(trainset, valset)
 
     def __load_test_dataset(self) -> None:
-        self.__test_dataset = self.__load_dataset(self.test_set_path)
+        self.__test_dataset = JitImageSet(self.test_set_path)
         self.__test_loader = DataLoader(self.__test_dataset, batch_size=1,
                                             drop_last=False, num_workers=self.workers, shuffle=False)
 

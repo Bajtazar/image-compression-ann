@@ -17,6 +17,7 @@ Project Organization
     ├── docs               <- A default Sphinx project; see sphinx-doc.org for details
     │
     ├── models             <- Trained and serialized models, model predictions, or model summaries
+    │   └── models.csv     <- File that translates training session id to the model params
     │
     ├── references         <- Data dictionaries, manuals, and all other explanatory materials.
     │

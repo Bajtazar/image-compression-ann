@@ -95,7 +95,9 @@ def get_network_id(config: ConfigParser) -> int:
 
 @lru_cache(maxsize=None)
 def current_network_path(config_path: str = DEFAULT_CONFIG_INI_PATH) -> str:
-    return f"training_session_number_{get_network_id(get_config(config_path)):03}"
+    return (
+        f"models/training_session_number_{get_network_id(get_config(config_path)):03}"
+    )
 
 
 def update_config() -> None:

@@ -36,15 +36,20 @@ Project Organization
     │   ├── features       <- Scripts to turn raw data into features for modeling
     │   │   └── build_features.py
     │   │
-    │   ├── models         <- Scripts to train models and then use trained models to make
-    │   │   │                 predictions
-    │   │   ├── predict_model.py
+    │   ├── models         <- Scripts to train models and then use trained models to make benchmarks
+    │   │   │
+    │   │   ├── networks   <- module with different neural network architectures
+    │   │   ├── gym        <- module with neural network training suite
+    │   │   ├── benchmarks <- module with neural network benchmarking suite
+    │   │   ├── benchmark_model.py
     │   │   └── train_model.py
     │   │
     │   └── visualization  <- Scripts to create exploratory and results oriented visualizations
     │       └── visualize.py
     │
-    └── tox.ini            <- tox file with settings for running tox; see tox.readthedocs.io
+    ├── tox.ini            <- tox file with settings for running tox; see tox.readthedocs.io
+    │
+    └── config.ini         <- configuration file with the current network params
 
 
 --------

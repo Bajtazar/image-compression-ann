@@ -4,8 +4,12 @@ from csv import reader, writer
 from itertools import islice
 
 
+DEFAULT_CONFIG_INI_PATH: str = "config.ini"
+MODELS_CSV_FILE_PATH: str = "models/models.csv"
+
+
 @lru_cache(maxsize=None)
-def get_config(path: str = "config.ini") -> ConfigParser:
+def get_config(path: str = DEFAULT_CONFIG_INI_PATH) -> ConfigParser:
     config = ConfigParser()
     config.read(path)
     return config
@@ -53,7 +57,7 @@ def config_entry_to_dict(config: ConfigParser) -> dict[str, float | str | int]:
 
 def is_network_registered(config: ConfigParser) -> int | None:
     config_entry = config_entry_to_dict(config)
-    with open("models/models.csv", "r") as handle:
+    with open(MODELS_CSV_FILE_PATH, "r") as handle:
         handle = reader(handle)
         for row in islice(handle, 1, None):
             id_, entry = model_row_to_dict(row)
@@ -63,10 +67,10 @@ def is_network_registered(config: ConfigParser) -> int | None:
 
 
 def emplace_network_id(config: ConfigParser) -> int:
-    with open("models/models.csv", "r") as handle:
+    with open(MODELS_CSV_FILE_PATH, "r") as handle:
         last_id = list(reader(handle))[-1][0]
     last_id = 0 if last_id == "id" else int(last_id) + 1
-    with open("models/models.csv", "a", newline="") as handle:
+    with open(MODELS_CSV_FILE_PATH, "a", newline="") as handle:
         writer(handle).writerow(
             [
                 last_id,
@@ -90,7 +94,7 @@ def get_network_id(config: ConfigParser) -> int:
 
 
 @lru_cache(maxsize=None)
-def current_network_path(config_path: str = "config.ini") -> str:
+def current_network_path(config_path: str = DEFAULT_CONFIG_INI_PATH) -> str:
     return f"training_session_number_{get_network_id(get_config(config_path)):03}"
 
 

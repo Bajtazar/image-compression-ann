@@ -21,7 +21,6 @@ import numpy as np
 
 from gym.progress_bar import ProgressBar
 from gym.data_manager import DataManager
-from gym.logger import log_to_file
 from gym.distributed import save_on_master, is_main_process, get_rank, print_on_master
 from gym.network_loader import load_network, current_network_path, load_optimizer
 from gym.config import get_config

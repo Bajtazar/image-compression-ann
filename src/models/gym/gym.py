@@ -128,10 +128,14 @@ class Gym:
             f"[green](Epoch={epoch+1}) Test images reconstruction",
             total=self.__data_manager.real_test_set_len,
         ) as recon_task:
-            if bool(get_config()["environment"]["make_snapshot_on_save"]):
+            if int(get_config()["environment"]["make_snapshot_on_save"]):
                 save_on_master(
                     self.__module.state_dict(),
                     f"{self.__params.output_dir}/{epoch}/model",
+                )
+                save_on_master(
+                    self.__optimizer.state_dict(),
+                    f"{self.__params.output_dir}/{epoch}/optimizer",
                 )
             self.__data_manager.reconstruct_images(
                 f"{self.__params.output_dir}/{epoch}/tmp",

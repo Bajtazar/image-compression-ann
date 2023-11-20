@@ -17,6 +17,7 @@ def worker(is_distributed: bool) -> None:
     config = get_config()
     manager = DataManager(
         test_set_path=config["datasets"]["test"],
+        raw_test_set_path=config["datasets"]["raw_test"],
         train_set_path=config["datasets"]["train"],
         batch_size=int(config["environment"]["batch_size"]),
         block_overlap_size=int(config["session"]["block_overlap_size"]),

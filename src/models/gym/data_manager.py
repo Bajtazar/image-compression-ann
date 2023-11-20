@@ -21,6 +21,7 @@ Transform = TypeVar("Transform")
 @dataclass
 class DataManager:
     test_set_path: str
+    raw_test_set_path: str
     train_set_path: str
     batch_size: int
     block_overlap_size: int
@@ -123,10 +124,7 @@ class DataManager:
 
     @property
     def real_test_set_len(self) -> int:
-        length = 0
-        for root, _, files in os.walk(self.test_set_path):
-            length += len(files)
-        return length
+        return sum(len(files) for (*_, files) in os.walk(self.raw_test_set_path))
 
     @staticmethod
     def save_image(image: Tensor, path: str) -> None:
@@ -149,7 +147,7 @@ class DataManager:
     ) -> None:
         if not os.path.exists(out_path):
             os.mkdir(out_path)
-        for root, _, files in os.walk(self.test_set_path):
+        for root, _, files in os.walk(self.raw_test_set_path):
             for file in files:
                 fname = f"{root}/{file}"
                 img = read_image(fname, ImageReadMode.RGB)

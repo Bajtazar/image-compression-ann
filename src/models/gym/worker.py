@@ -14,7 +14,7 @@ from gym.config import get_config
 import torch
 
 
-def worker(is_distributed: bool):
+def worker(is_distributed: bool) -> None:
     if is_distributed:
         init_distributed()
     config = get_config()

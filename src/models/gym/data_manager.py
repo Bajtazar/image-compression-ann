@@ -12,7 +12,7 @@ import os
 
 from gym.distributed import is_main_process
 from gym.jit_image_set import JitImageSet
-from gym.tiles import split_image, concatenate_image
+from gym.tiles import concatenate_image
 
 
 Transform = TypeVar("Transform")

@@ -130,13 +130,14 @@ class Gym:
         time = datetime.now().strftime("%H:%M:%S")
         message = f'[{time}]Epoch: {epoch + 1}/{epochs} ({(((epoch + 1) / epochs) * 100):.2f}%) losses: t={train_loss}, v={val_loss}'
         print_on_master(message)
-        if not exists(f'logs/{self.__tag}.csv'):
-            self.__create_csv_header()
-        with open(f'logs/{self.__tag}.csv', 'a') as handle:
+        log_path = f'{self.__params.output_dir}/loss.csv'
+        if not exists(log_path):
+            self.__create_csv_header(log_path)
+        with open(log_path, 'a') as handle:
             handle.write(f'{time},{epoch},{train_loss},{val_loss}\n')
 
-    def __create_csv_header(self) -> None:
-        with open(f'logs/{self.__tag}.csv', 'a') as handle:
+    def __create_csv_header(self, log_path: str) -> None:
+        with open(log_path, 'a') as handle:
             handle.write('Time,Epoch,Train loss,Validation loss\n')
 
     def __save_latest_iteration(self, epoch: int) -> None:
@@ -181,7 +182,6 @@ class Gym:
             main_task.update(1)
 
     def train(self, epochs: int, save_interval: int) -> None:
-        self.__tag = self.__params.output_dir
         with ProgressBar() as progress:
             self.__task_bar = progress
             with self.__task_bar.task("[red]Model training status", total=epochs) as main_task:

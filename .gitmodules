@@ -1,0 +1,6 @@
+[submodule "external/pytorch_gdn"]
+	path = external/pytorch_gdn
+	url = https://github.com/jorge-pessoa/pytorch-gdn
+[submodule "external/pytorch_dwt"]
+	path = external/pytorch_dwt
+	url = https://github.com/fbcotter/pytorch_wavelets

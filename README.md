@@ -16,6 +16,8 @@ Project Organization
     │
     ├── docs               <- A default Sphinx project; see sphinx-doc.org for details
     │
+    ├── external           <- Python dependencies that cannot be installed via package manager
+    │
     ├── models             <- Trained and serialized models, model predictions, or model summaries
     │   └── models.csv     <- File that translates training session id to the model params
     │

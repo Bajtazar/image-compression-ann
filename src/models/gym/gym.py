@@ -27,7 +27,7 @@ from gym.network_loader import load_network, current_network_path, load_optimize
 from gym.config import get_config
 
 
-Model = TypeVar('Model')
+Model = TypeVar("Model")
 
 
 def empty_memory() -> None:
@@ -47,16 +47,19 @@ class Gym:
         self.__params = params
         self.__start_epoch = self.__load_model()
         self.__optimizer = load_optimizer(self.__model)
-        self.__snapshot_interval = int(get_config()['environment']['snapshot_interval'])
+        self.__snapshot_interval = int(get_config()["environment"]["snapshot_interval"])
 
     def __load_model(self) -> int:
         self.__model, epoch = load_network(
             loss_function=self.__params.loss_function,
             device=self.__data_manager.platform,
-            quantization=self.__params.quantization)
+            quantization=self.__params.quantization,
+        )
         if self.__data_manager.distributed:
             self.__model = SyncBatchNorm.convert_sync_batchnorm(self.__model.cuda())
-            self.__model = DistributedDataParallel(self.__model, device_ids=[get_rank()])
+            self.__model = DistributedDataParallel(
+                self.__model, device_ids=[get_rank()]
+            )
         else:
             self.__model = self.__model.cuda()
         return epoch
@@ -68,10 +71,15 @@ class Gym:
     def __train_pass(self, epoch: int) -> None:
         self.__model.train()
         epoch_loss = []
-        with self.__task_bar.task(f"[green](Epoch={epoch+1}) Training pass status", total=self.__data_manager.training_set_len) as train_tast:
+        with self.__task_bar.task(
+            f"[green](Epoch={epoch+1}) Training pass status",
+            total=self.__data_manager.training_set_len,
+        ) as train_tast:
             for batch in self.__data_manager.training_set(epoch):
                 latent, hyperlatent, stddev, mean_, recon = self.__model(batch)
-                loss = self.__module.loss(latent, hyperlatent, stddev, mean_, recon, batch)
+                loss = self.__module.loss(
+                    latent, hyperlatent, stddev, mean_, recon, batch
+                )
                 epoch_loss.append(loss.item())
                 loss.backward()
                 self.__optimizer.step()
@@ -84,11 +92,16 @@ class Gym:
     def __validation_pass(self, epoch: int) -> None:
         self.__model.eval()
         epoch_loss = []
-        with self.__task_bar.task(f"[green](Epoch={epoch+1}) Validation pass status", total=self.__data_manager.validation_set_len) as val_task:
+        with self.__task_bar.task(
+            f"[green](Epoch={epoch+1}) Validation pass status",
+            total=self.__data_manager.validation_set_len,
+        ) as val_task:
             with no_grad():
                 for batch in self.__data_manager.validation_set(epoch):
                     latent, hyperlatent, stddev, mean_, recon = self.__model(batch)
-                    loss = self.__module.loss(latent, hyperlatent, stddev, mean_, recon, batch)
+                    loss = self.__module.loss(
+                        latent, hyperlatent, stddev, mean_, recon, batch
+                    )
                     epoch_loss.append(loss.item())
                     del batch
                     empty_memory()
@@ -97,64 +110,79 @@ class Gym:
 
     def __test_pass(self, epoch: int) -> None:
         self.__model.eval()
-        with self.__task_bar.task(f"[green](Epoch={epoch+1}) Test pass status", total=self.__data_manager.test_set_len) as test_task:
+        with self.__task_bar.task(
+            f"[green](Epoch={epoch+1}) Test pass status",
+            total=self.__data_manager.test_set_len,
+        ) as test_task:
             with no_grad():
                 for batch, origin in self.__data_manager.test_set(epoch):
                     _, _, _, _, output = self.__model(batch)
                     self.__data_manager.save_image(
-                        output, f'{self.__params.output_dir}/{epoch}/tmp/{origin}')
+                        output, f"{self.__params.output_dir}/{epoch}/tmp/{origin}"
+                    )
                     del batch
                     empty_memory()
                     test_task.update(1)
 
     def __reconstruct_images(self, epoch: int) -> None:
-        with self.__task_bar.task(f"[green](Epoch={epoch+1}) Test images reconstruction", total=self.__data_manager.real_test_set_len) as recon_task:
-            if bool(get_config()['environment']['make_snapshot_on_save']):
-                save_on_master(self.__module.state_dict(),
-                    f'{self.__params.output_dir}/{epoch}/model')
+        with self.__task_bar.task(
+            f"[green](Epoch={epoch+1}) Test images reconstruction",
+            total=self.__data_manager.real_test_set_len,
+        ) as recon_task:
+            if bool(get_config()["environment"]["make_snapshot_on_save"]):
+                save_on_master(
+                    self.__module.state_dict(),
+                    f"{self.__params.output_dir}/{epoch}/model",
+                )
             self.__data_manager.reconstruct_images(
-                f'{self.__params.output_dir}/{epoch}/tmp',
-                f'{self.__params.output_dir}/{epoch}/result',
-                lambda: recon_task.update(1))
-            rmtree(f'{self.__params.output_dir}/{epoch}/tmp')
+                f"{self.__params.output_dir}/{epoch}/tmp",
+                f"{self.__params.output_dir}/{epoch}/result",
+                lambda: recon_task.update(1),
+            )
+            rmtree(f"{self.__params.output_dir}/{epoch}/tmp")
 
     def __save_model(self, epoch: int) -> None:
         try:
-            makedirs(f'{self.__params.output_dir}/{epoch}/tmp')
+            makedirs(f"{self.__params.output_dir}/{epoch}/tmp")
         except Exception:
             pass
         self.__test_pass(epoch)
         self.__reconstruct_images(epoch)
 
-    def __print_status(self, epoch: int, epochs: int, train_loss: float, val_loss: float) -> None:
+    def __print_status(
+        self, epoch: int, epochs: int, train_loss: float, val_loss: float
+    ) -> None:
         time = datetime.now().strftime("%H:%M:%S")
-        message = f'[{time}]Epoch: {epoch + 1}/{epochs} ({(((epoch + 1) / epochs) * 100):.2f}%) losses: t={train_loss}, v={val_loss}'
+        message = f"[{time}]Epoch: {epoch + 1}/{epochs} ({(((epoch + 1) / epochs) * 100):.2f}%) losses: t={train_loss}, v={val_loss}"
         print_on_master(message)
-        log_path = f'{self.__params.output_dir}/loss.csv'
+        log_path = f"{self.__params.output_dir}/loss.csv"
         if not exists(log_path):
             self.__create_csv_header(log_path)
-        with open(log_path, 'a') as handle:
-            handle.write(f'{time},{epoch},{train_loss},{val_loss}\n')
+        with open(log_path, "a") as handle:
+            handle.write(f"{time},{epoch},{train_loss},{val_loss}\n")
 
     def __create_csv_header(self, log_path: str) -> None:
-        with open(log_path, 'a') as handle:
-            handle.write('Time,Epoch,Train loss,Validation loss\n')
+        with open(log_path, "a") as handle:
+            handle.write("Time,Epoch,Train loss,Validation loss\n")
 
     def __save_latest_iteration(self, epoch: int) -> None:
-        if not exists(f'{self.__params.output_dir}/latest/'):
+        if not exists(f"{self.__params.output_dir}/latest/"):
             try:
-                makedirs(f'{self.__params.output_dir}/latest/')
+                makedirs(f"{self.__params.output_dir}/latest/")
             except Exception:
                 pass
-        save_on_master(self.__module.state_dict(),
-             f'{self.__params.output_dir}/latest/model')
-        save_on_master(self.__optimizer.state_dict(),
-             f'{self.__params.output_dir}/latest/optimizer')
-        with open(f'{self.__params.output_dir}/latest/info', 'w') as handle:
+        save_on_master(
+            self.__module.state_dict(), f"{self.__params.output_dir}/latest/model"
+        )
+        save_on_master(
+            self.__optimizer.state_dict(),
+            f"{self.__params.output_dir}/latest/optimizer",
+        )
+        with open(f"{self.__params.output_dir}/latest/info", "w") as handle:
             handle.write(str(epoch))
 
     def __signalize(self, status: str) -> None:
-        with open('status', 'w') as handle:
+        with open("status", "w") as handle:
             handle.write(status)
 
     def __save_model_if_ready(self, epoch: int, save_interval: int) -> None:
@@ -163,7 +191,9 @@ class Gym:
         if epoch % self.__snapshot_interval == self.__snapshot_interval - 1:
             self.__save_latest_iteration(epoch)
 
-    def __train_iteration(self, epoch: int, save_interval: int) -> tuple[bool, np.float64, np.float64]:
+    def __train_iteration(
+        self, epoch: int, save_interval: int
+    ) -> tuple[bool, np.float64, np.float64]:
         train_pass_value = self.__train_pass(epoch)
         val_pass_value = self.__validation_pass(epoch)
         if np.isnan(train_pass_value) or np.isnan(val_pass_value):
@@ -172,9 +202,13 @@ class Gym:
             self.__save_model_if_ready(epoch, save_interval)
         return True, train_pass_value, val_pass_value
 
-    def __train_loop(self, epochs: int, save_interval: int, main_task: ProgressBar) -> None:
+    def __train_loop(
+        self, epochs: int, save_interval: int, main_task: ProgressBar
+    ) -> None:
         for epoch in range(self.__start_epoch, epochs):
-            is_valid, train_loss, val_loss = self.__train_iteration(epoch, save_interval)
+            is_valid, train_loss, val_loss = self.__train_iteration(
+                epoch, save_interval
+            )
             self.__print_status(epoch, epochs, train_loss, val_loss)
             if not is_valid:
                 self.__signalize("NaN")
@@ -184,7 +218,9 @@ class Gym:
     def train(self, epochs: int, save_interval: int) -> None:
         with ProgressBar() as progress:
             self.__task_bar = progress
-            with self.__task_bar.task("[red]Model training status", total=epochs) as main_task:
+            with self.__task_bar.task(
+                "[red]Model training status", total=epochs
+            ) as main_task:
                 main_task.update(self.__start_epoch)
                 self.__train_loop(epochs, save_interval, main_task)
         self.__signalize("Done")

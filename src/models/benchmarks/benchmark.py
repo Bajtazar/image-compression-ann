@@ -37,9 +37,7 @@ class Benchmark:
         ) as task:
             with no_grad():
                 for batch in self.__data_manager.training_set(None):
-                    latent, hyperlatent, _, _, _ = self.__model(
-                        batch, quantization_step
-                    )
+                    (latent, hyperlatent, *_) = self.__model(batch, quantization_step)
                     latent_shape = latent.shape
                     hyperlatent_shape = hyperlatent.shape
                     latent_distrib.update(latent)
@@ -61,9 +59,7 @@ class Benchmark:
         ) as task:
             with no_grad():
                 for batch, _ in self.__data_manager.test_set(None):
-                    latent, hyperlatent, _, _, _ = self.__model(
-                        batch, quantization_step
-                    )
+                    (latent, hyperlatent, *_) = self.__model(batch, quantization_step)
                     latent_shape = latent.shape
                     hyperlatent_shape = hyperlatent.shape
                     latent_distrib.update(latent)
@@ -81,7 +77,7 @@ class Benchmark:
         ) as task:
             with no_grad():
                 for batch, _ in self.__data_manager.test_set(None):
-                    _, _, stddev, mean, _ = self.__model(batch, quantization_step)
+                    (*_, stddev, mean, _) = self.__model(batch, quantization_step)
                     cdf_distribution.update(mean, stddev)
                     task.update(1)
         return cdf_distribution

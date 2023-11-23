@@ -5,9 +5,9 @@ from benchmarks.stats import Stats
 
 from gym.config import get_config, current_network_path
 from gym.network_loader import load_network
-from gym.loss_functions import entropy_reconstruction_loss
 from gym.quantization import Quantization
 from gym.data_manager import DataManager
+from gym.loss_function import NormalDistributionRateDistortionLoss
 
 import matplotlib.pyplot as plt
 
@@ -16,6 +16,7 @@ from numpy import mean
 from collections import defaultdict
 from dataclasses import dataclass
 from json import dump, load
+from os import makedirs
 
 from torch import Tensor
 
@@ -45,13 +46,14 @@ class NetworkStats:
             distributed=False,
         )
         self.__autoencoder, self.__first_epoch = load_network(
-            entropy_reconstruction_loss,
+            NormalDistributionRateDistortionLoss,
             Quantization(),
             self.__manager.platform,
             self.network_run_path,
         )
         self.__stats = defaultdict(lambda: defaultdict(dict))
         self.__target_path = f"{self.network_run_path}/benchmarks"
+        makedirs(self.__target_path, exist_ok=True)
 
     def __average_stats(self, quantization_step: float) -> None:
         self.__stats["Average stats"][quantization_step] = {
@@ -60,7 +62,9 @@ class NetworkStats:
         }
 
     def __quant_path(self, quantization_step: float) -> str:
-        return f"{self.__target_path}/quantization_step_{quantization_step}"
+        path = f"{self.__target_path}/quantization_step_{quantization_step}"
+        makedirs(path, exist_ok=True)
+        return path
 
     def __distributions(self, benchmark: Benchmark, quantization_step: float) -> Tensor:
         (
@@ -95,7 +99,7 @@ class NetworkStats:
                 max_symbol=self.max_symbol,
             )
             compressor = benchmark.benchmark_test_set(compressor, quantization_step)
-            test_path = get_config()["environment"]["test_set_path"]
+            test_path = get_config()["datasets"]["raw_test"]
             compressor.compress(benchmark.progress_bar, test_path, quantization_step)
             self.__stats["Run stats"][quantization_step] = compressor.get_stats(
                 benchmark.progress_bar, Stats(test_path)
@@ -129,7 +133,7 @@ class NetworkStats:
 
 
 def get_stats_of_network(network_run_path: str) -> None:
-    net_stats = NetworkStats(network_run_pat, quantization_steph)
+    net_stats = NetworkStats(network_run_path)
     for quantization_step in QUANTIZATION_STEPS:
         net_stats.benchmark(quantization_step)
     net_stats.log_stats()

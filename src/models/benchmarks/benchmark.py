@@ -4,8 +4,6 @@ import os
 
 from gym.data_manager import DataManager, DataLoader
 from gym.network_loader import Network
-from gym.quantization_stepization import quantization_stepization
-from gym.loss_functions import entropy_reconstruction_loss
 from gym.progress_bar import ProgressBar
 
 from benchmarks.compressor import Compressor

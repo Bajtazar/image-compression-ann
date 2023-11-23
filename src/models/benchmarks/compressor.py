@@ -13,6 +13,7 @@ from gym.progress_bar import ProgressBar
 from benchmarks.stats import Stats
 
 from gc import collect
+from collections import defaultdict
 
 
 class Compressor:
@@ -125,7 +126,7 @@ class Compressor:
             concatenate_image(
                 reconstruction,
                 size,
-                int(get_config()["environment"]["block_overlap_size"]),
+                int(get_config()["session"]["block_overlap_size"]),
             ).to(float32)
             / 255.0,
         )

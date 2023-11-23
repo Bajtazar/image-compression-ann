@@ -24,7 +24,7 @@ class Benchmark:
         self.__bar = ProgressBar()
 
     def train_set_distribution(
-        self,
+        self, quantization_step: float
     ) -> tuple[Size, Size, DistributionCalculator, DistributionCalculator]:
         self.__model.eval()
         latent_shape, hyperlatent_shape = None, None
@@ -37,7 +37,9 @@ class Benchmark:
         ) as task:
             with no_grad():
                 for batch in self.__data_manager.training_set(None):
-                    latent, hyperlatent, _, _, _ = self.__model(batch)
+                    latent, hyperlatent, _, _, _ = self.__model(
+                        batch, quantization_step
+                    )
                     latent_shape = latent.shape
                     hyperlatent_shape = hyperlatent.shape
                     latent_distrib.update(latent)
@@ -85,11 +87,11 @@ class Benchmark:
         return cdf_distribution
 
     def benchmark_test_set(
-        self, compressor: Compressor, quantization_stepization_step: float
+        self, compressor: Compressor, quantization_step: float
     ) -> Compressor:
         self.__model.eval()
         with self.__bar.task(
-            f"Benchmarking test set for quantization_step={quantization_stepization_step}",
+            f"Benchmarking test set for quantization_step={quantization_step}",
             total=self.__data_manager.test_set_len,
         ) as task:
             with no_grad():
@@ -100,7 +102,7 @@ class Benchmark:
                         latent_stddev,
                         latent_mean,
                         recon,
-                    ) = self.__model(batch, quantization_stepization_step)
+                    ) = self.__model(batch, quantization_step)
                     compressor.append(
                         latent, hyperlatent, latent_mean, latent_stddev, recon, origin
                     )

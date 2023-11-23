@@ -18,7 +18,9 @@ from dataclasses import dataclass
 from json import dump, load
 from os import makedirs
 
-from torch import Tensor
+from torch import Tensor, uint8
+
+from torchvision.io import write_png
 
 
 QUANTIZATION_STEPS: list[float] = [1, 2, 5, 10]
@@ -72,7 +74,7 @@ class NetworkStats:
             self.__stats["Hyperlatent shape"],
             latent_distrib,
             hyper_distrib,
-        ) = benchmark.train_set_distribution()
+        ) = benchmark.train_set_distribution(quantization_step)
         self.__stats["Min latent symbol"] = latent_distrib.min_symbol
         self.__stats["Max latent symbol"] = latent_distrib.max_symbol
         self.__stats["Min hyperlatent symbol"] = hyper_distrib.min_symbol
@@ -89,6 +91,17 @@ class NetworkStats:
             self.min_symbol, self.max_symbol
         )
 
+    def __generate_reconstruction_cb(self, quantization_step: float) -> None:
+        path = f"{self.__quant_path(quantization_step)}/recons"
+        makedirs(path, exist_ok=True)
+
+        def callback(origin: str, reconstruction: Tensor) -> None:
+            write_png(
+                (reconstruction * 255.0).to(uint8).to("cpu"), f"{path}/{origin}.png"
+            )
+
+        return callback
+
     def benchmark(self, quantization_step: float) -> None:
         with Benchmark(self.__autoencoder, self.__manager) as benchmark:
             hyper_cdf = self.__distributions(benchmark, quantization_step)
@@ -102,7 +115,9 @@ class NetworkStats:
             test_path = get_config()["datasets"]["raw_test"]
             compressor.compress(benchmark.progress_bar, test_path, quantization_step)
             self.__stats["Run stats"][quantization_step] = compressor.get_stats(
-                benchmark.progress_bar, Stats(test_path)
+                benchmark.progress_bar,
+                Stats(test_path),
+                self.__generate_reconstruction_cb(quantization_step),
             )
             self.__average_stats(quantization_step)
 

@@ -14,6 +14,7 @@ from benchmarks.stats import Stats
 
 from gc import collect
 from collections import defaultdict
+from typing import Callable
 
 
 class Compressor:
@@ -149,11 +150,15 @@ class Compressor:
                 task.update(1)
 
     def get_stats(
-        self, progress_bar: ProgressBar, stats: Stats
+        self,
+        progress_bar: ProgressBar,
+        stats: Stats,
+        reconstruction_callaback: Callable[[str, Tensor], None],
     ) -> dict[str, dict[str, float]]:
         metrics = {"bpp": {}, "psnr": {}, "ssim": {}, "lpips": {}}
         with progress_bar.task("Calculating metrics", len(self.__compressed)) as task:
             for origin, (stream, recon) in self.__compressed.items():
+                reconstruction_callaback(origin, recon)
                 metrics["bpp"][origin] = stats.bits_per_pixel_len(origin, stream)
                 metrics["psnr"][origin] = stats.psnr(origin, recon)
                 metrics["ssim"][origin] = stats.ssim(origin, recon)

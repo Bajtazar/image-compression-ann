@@ -50,7 +50,7 @@ class NetworkStats:
             self.__manager.platform,
             self.network_run_path,
         )
-        self.__stats = defaultdict(defaultdict({}))
+        self.__stats = defaultdict(lambda: defaultdict(dict))
         self.__target_path = f"{self.network_run_path}/benchmarks"
 
     def __average_stats(self, quantization_step: float) -> None:

@@ -184,17 +184,17 @@ class Network(Module):
     def forward(self, x: Tensor, quantization_step: float = 1) -> tuple[Tensor, Tensor]:
         latent = self.__encoder(x)
         quantized_latent = self.__quantize(
-            latent * quantization_step if quantization_step != 1 else latent
+            latent / quantization_step if quantization_step != 1 else latent
         )
         decoded = self.__decoder(
-            quantized_latent / quantization_step
+            quantized_latent * quantization_step
             if quantization_step != 1
             else quantized_latent
         )
         hyperlatent = self.__quantize(self.__hyperencoder(latent))
         hyperpriors = self.__hyperdecoder(hyperlatent)
         context = self.__context(
-            quantized_latent / quantization_step
+            quantized_latent * quantization_step
             if quantization_step != 1
             else quantized_latent
         )

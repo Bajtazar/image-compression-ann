@@ -23,7 +23,7 @@ class Stats:
         self.__lpips = LearnedPerceptualImagePatchSimilarity(normalize=True)
 
     def __img_path(self, origin: str) -> str:
-        return f"{self.test_set_path}/dataset/{origin}.png"
+        return f"{self.test_set_path}/{origin}.png"
 
     def bits_per_pixel_len(self, origin_path: str, stream_len: int) -> float:
         width, height = Image.open(self.__img_path(origin_path)).size

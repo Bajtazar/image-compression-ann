@@ -38,8 +38,8 @@ class Benchmark:
             with no_grad():
                 for batch in self.__data_manager.training_set(None):
                     (latent, hyperlatent, *_) = self.__model(batch, quantization_step)
-                    latent_shape = latent.shape
-                    hyperlatent_shape = hyperlatent.shape
+                    latent_shape = list(latent.shape)
+                    hyperlatent_shape = list(hyperlatent.shape)
                     latent_distrib.update(latent)
                     hyperlatent_distrib.update(hyperlatent)
                     task.update(1)
@@ -60,8 +60,8 @@ class Benchmark:
             with no_grad():
                 for batch, _ in self.__data_manager.test_set(None):
                     (latent, hyperlatent, *_) = self.__model(batch, quantization_step)
-                    latent_shape = latent.shape
-                    hyperlatent_shape = hyperlatent.shape
+                    latent_shape = list(latent.shape)
+                    hyperlatent_shape = list(hyperlatent.shape)
                     latent_distrib.update(latent)
                     hyperlatent_distrib.update(hyperlatent)
                     task.update(1)

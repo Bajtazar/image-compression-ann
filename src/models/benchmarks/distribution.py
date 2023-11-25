@@ -42,11 +42,11 @@ class DistributionCalculator:
 
     @property
     def min_symbol(self) -> float:
-        return min(self.distribution.keys())
+        return min(self.distribution.keys()).item()
 
     @property
     def max_symbol(self) -> float:
-        return max(self.distribution.keys())
+        return max(self.distribution.keys()).item()
 
     def cumulative_distribution_function(self, start: int, end: int) -> Tensor:
         if (min_symbol := self.min_symbol) < start:

@@ -122,6 +122,7 @@ class NetworkStats:
             self.__average_stats(quantization_step)
 
     def log_stats(self) -> None:
+        self.__stats["Run stats"] = dict(self.__stats["Run stats"])
         with open(f"{self.__target_path}/stats.json", "w") as handle:
             dump(self.__stats, handle, indent=4)
 

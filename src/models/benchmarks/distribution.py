@@ -2,11 +2,12 @@ from __future__ import annotations
 from statistics import median
 from itertools import chain
 from json import dump
-from collections import Counter
+from collections import Counter, defaultdict
+from itertools import product
 
 import matplotlib.pyplot as plt
 
-from torch import Tensor, tensor, float32, unique
+from torch import Tensor, tensor, float32, unique, zeros
 
 
 class CdfDistributionCalculator:
@@ -22,6 +23,60 @@ class CdfDistributionCalculator:
     def save(self, file_path: str) -> None:
         with open(file_path, "w") as handle:
             dump({"means": self.__means, "stddevs": self.__stddevs}, handle)
+
+
+class TensorDistributionCalculator:
+    def __init__(self) -> None:
+        self.__calculator = defaultdict(Counter)
+        self.__shape = None
+
+    def update(self, feature_vector: Tensor) -> TensorDistributionCalculator:
+        # Not the fastest solution but uses much less RAM rather than tensor counter
+        range_ = product(*[range(i) for i in feature_vector.shape])
+        for vertices in range_:
+            self.__calculator[vertices][int(feature_vector[*vertices].item())] += 1
+        self.__shape = feature_vector.shape
+        return self
+
+    @property
+    def min_symbol(self) -> float:
+        return min(
+            [min(distribution.keys()) for distribution in self.__calculator.values()]
+        )
+
+    @property
+    def max_symbol(self) -> float:
+        return max(
+            [max(distribution.keys()) for distribution in self.__calculator.values()]
+        )
+
+    def __check_values(self, start: int, end: int) -> None:
+        if self.__shape is None:
+            raise RuntimeError(
+                "Tensor Distribution Calculator has not been updated once so cdf calculation is not possible"
+            )
+        if (min_symbol := self.min_symbol) < start:
+            raise RuntimeError(
+                f"Given start of cdf ({start}) is bigger than the smallest distribution symbol ({min_symbol})"
+            )
+        if (max_symbol := self.max_symbol) >= end:
+            raise RuntimeError(
+                f"Given end of cdf ({end}) is smaller or equal than the largest distribution symbol ({max_symbol})"
+            )
+
+    def cumulative_distribution_function(self, start: int, end: int) -> Tensor:
+        self.__check_values(start, end)
+        cdf_range = end - start + 1
+        cdf_tensor = zeros((*self.__shape, cdf_range))
+        for position, distribution in self.__calculator.items():
+            feature_element_cdf = cdf_tensor[*position].view(cdf_range)
+            accumulator = 0
+            for i, key in enumerate(range(start, end), 1):
+                if key in distribution:
+                    accumulator += distribution[key]
+                feature_element_cdf[i] = accumulator
+            feature_element_cdf /= accumulator
+        return cdf_tensor
 
 
 class DistributionCalculator:
@@ -48,7 +103,7 @@ class DistributionCalculator:
     def max_symbol(self) -> float:
         return max(self.distribution.keys()).item()
 
-    def cumulative_distribution_function(self, start: int, end: int) -> Tensor:
+    def __check_values(self, start: int, end: int) -> None:
         if (min_symbol := self.min_symbol) < start:
             raise RuntimeError(
                 f"Given start of cdf ({start}) is bigger than the smallest distribution symbol ({min_symbol})"
@@ -57,6 +112,9 @@ class DistributionCalculator:
             raise RuntimeError(
                 f"Given end of cdf ({end}) is smaller or equal than the largest distribution symbol ({max_symbol})"
             )
+
+    def cumulative_distribution_function(self, start: int, end: int) -> Tensor:
+        self.__check_values(start, end)
         cdf = [0]
         accumulator = 0
         for key in range(start, end):

@@ -31,7 +31,7 @@ def worker(is_distributed: bool) -> None:
     gym = Gym(
         manager,
         Gym.Params(
-            NormalDistributionRateDistortionLoss(), FuzzyQuantization(manager.platform)
+            NormalDistributionRateDistortionLoss(), Quantization()
         ),
     )
     gym.train(

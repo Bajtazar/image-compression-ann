@@ -9,21 +9,14 @@ from torch.nn import (
     Sequential,
     ConvTranspose2d,
     Sigmoid,
-    Flatten,
-    Unflatten,
-    Linear,
-    BatchNorm1d,
 )
-from torch.nn import Conv3d, ConvTranspose3d, Softplus
-from torch import Tensor, unbind, flatten, cat, chunk, stack, split, clamp
-
-import pytorch_wavelets as wvlt
+from torch.nn import Softplus
+from torch import Tensor, cat, split
 
 from pytorch_gdn import GDN
 
 from gym.quantization import Quantization
-from gym.modules import FullDWT, FullIDWT, Squeeze, Unsqueeze, MaskedConv2d, Wavelon
-from gym.wavelets import standard_mexican_hat_wavelet
+from gym.modules import MaskedConv2d
 
 from gym.config import get_config
 

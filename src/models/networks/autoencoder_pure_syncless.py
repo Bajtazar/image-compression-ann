@@ -4,18 +4,19 @@ from typing import TypeVar
 from torch.nn import (
     Module,
     Conv2d,
-    BatchNorm2d,
     LeakyReLU,
     Sequential,
     ConvTranspose2d,
     Sigmoid,
 )
-from torch import Tensor, cat, exp, split, clamp
+from torch.nn import Softplus
+from torch import Tensor, cat, split
 
 from pytorch_gdn import GDN
 
 from gym.quantization import Quantization
 from gym.modules import MaskedConv2d
+
 from gym.config import get_config
 
 
@@ -40,7 +41,6 @@ class Encoder(Module):
                 padding_mode=PADDING_MODE,
             ),
             GDN(N, device),
-            BatchNorm2d(N),
             Conv2d(
                 N,
                 N,
@@ -50,7 +50,6 @@ class Encoder(Module):
                 padding_mode=PADDING_MODE,
             ),
             GDN(N, device),
-            BatchNorm2d(N),
             Conv2d(
                 N,
                 N,
@@ -60,7 +59,6 @@ class Encoder(Module):
                 padding_mode=PADDING_MODE,
             ),
             GDN(N, device),
-            BatchNorm2d(N),
             Conv2d(
                 N,
                 N,
@@ -83,17 +81,14 @@ class Decoder(Module):
                 N, N, kernel_size=KERNEL + 1, padding=PADDING, stride=STRIDE
             ),
             GDN(N, device, inverse=True),
-            BatchNorm2d(N),
             ConvTranspose2d(
                 N, N, kernel_size=KERNEL + 1, padding=PADDING, stride=STRIDE
             ),
             GDN(N, device, inverse=True),
-            BatchNorm2d(N),
             ConvTranspose2d(
                 N, N, kernel_size=KERNEL + 1, padding=PADDING, stride=STRIDE
             ),
             GDN(N, device, inverse=True),
-            BatchNorm2d(N),
             ConvTranspose2d(
                 N, I, kernel_size=KERNEL + 1, padding=PADDING, stride=STRIDE
             ),
@@ -110,10 +105,8 @@ class HyperEncoder(Module):
         self.__model = Sequential(
             Conv2d(N, N, kernel_size=5, stride=1),
             LeakyReLU(0.2),
-            BatchNorm2d(N),
             Conv2d(N, N, kernel_size=5, stride=1, padding=1),
             LeakyReLU(0.2),
-            BatchNorm2d(N),
             Conv2d(N, N, kernel_size=3, stride=2, padding=1),
         )
 
@@ -129,10 +122,8 @@ class HyperDecoder(Module):
         self.__model = Sequential(
             ConvTranspose2d(N, N, kernel_size=3, stride=2, padding=1),
             LeakyReLU(0.2),
-            BatchNorm2d(N),
             ConvTranspose2d(N, middle_channels, kernel_size=5, stride=1, padding=1),
             LeakyReLU(0.2),
-            BatchNorm2d(middle_channels),
             ConvTranspose2d(middle_channels, out_channels, kernel_size=4, stride=2),
         )
 
@@ -162,16 +153,15 @@ class EntropyParameters(Module):
         self.__model = Sequential(
             Conv2d(in_channels, l1_channels, kernel_size=1),
             LeakyReLU(0.2),
-            BatchNorm2d(l1_channels),
             Conv2d(l1_channels, l2_channels, kernel_size=1),
             LeakyReLU(0.2),
-            BatchNorm2d(l2_channels),
             Conv2d(l2_channels, out_channels, kernel_size=1),
         )
+        self.__softplus = Softplus()
 
     def forward(self, x: Tensor, shape: int) -> tuple[Tensor, Tensor]:
-        stddev = split(self.__model(x), shape, dim=1)
-        return clamp(exp(stddev), min=self.__min_stddev)
+        stddev, mean = split(self.__model(x), shape, dim=1)
+        return self.__softplus(stddev) + self.__min_stddev, mean
 
 
 LossFunction = TypeVar("LossFunction")

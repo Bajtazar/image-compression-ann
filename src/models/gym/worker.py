@@ -30,9 +30,7 @@ def worker(is_distributed: bool) -> None:
     print_on_master("Loaded samples")
     gym = Gym(
         manager,
-        Gym.Params(
-            NormalDistributionRateDistortionLoss(), Quantization()
-        ),
+        Gym.Params(NormalDistributionRateDistortionLoss(), Quantization()),
     )
     gym.train(
         int(get_config()["environment"]["epochs"]),

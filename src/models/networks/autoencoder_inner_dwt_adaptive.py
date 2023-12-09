@@ -9,88 +9,121 @@ from torch.nn import (
     ConvTranspose2d,
     Sigmoid,
 )
-from torch.nn import Softplus
+from torch.nn import Conv3d, ConvTranspose3d, Softplus
 from torch import Tensor, cat, split
 
 from pytorch_gdn import GDN
 
 from gym.quantization import Quantization
-from gym.modules import FullDWT, FullIDWT, MaskedConv2d, Wavelon
+from gym.modules import (
+    AdaptiveDWT,
+    AdaptiveIDWT,
+    Squeeze,
+    Unsqueeze,
+    MaskedConv2d,
+    Wavelon,
+)
 from gym.wavelets import standard_mexican_hat_wavelet
 from gym.config import get_config
 
 
-DECOMPS: int = 3
-I: int = 192
-N: int = 1024
-KERNEL: int = 5
-PADDING: int = 2
-WAVELET: str = "haar"
-PADDING_MODE: str = "replicate"
-STRIDE: int = 2
+N: int = 64
+
+
+class ConvexWaveletLens(Module):
+    def __init__(self, device: str, in_channels: int, out_channels: int) -> None:
+        super().__init__()
+        conv3d_kernel = (4, 1, 1)
+        conv3d_padding = (0, 0, 0)
+        self.__model = Sequential(
+            Conv2d(in_channels, in_channels, kernel_size=3, padding=1),
+            AdaptiveDWT(),
+            Conv3d(
+                in_channels,
+                out_channels,
+                kernel_size=conv3d_kernel,
+                padding=conv3d_padding,
+            ),
+            Squeeze(2),
+        )
+
+    def forward(self, x: Tensor) -> Tensor:
+        return self.__model(x)
+
+
+class ConcaveWaveletLens(Module):
+    def __init__(self, device: str, in_channels: int, out_channels: int) -> None:
+        super().__init__()
+        conv3d_kernel = (4, 1, 1)
+        conv3d_padding = (0, 0, 0)
+        self.__model = Sequential(
+            Unsqueeze(2),
+            ConvTranspose3d(
+                in_channels,
+                in_channels,
+                kernel_size=conv3d_kernel,
+                padding=conv3d_padding,
+            ),
+            AdaptiveIDWT(),
+            ConvTranspose2d(in_channels, out_channels, kernel_size=3, padding=1),
+        )
+
+    def forward(self, x: Tensor) -> Tensor:
+        return self.__model(x)
 
 
 class Encoder(Module):
     def __init__(self, device: str) -> None:
         super().__init__()
         self.__model = Sequential(
-            Conv2d(
-                I,
-                N,
-                kernel_size=KERNEL,
-                padding=PADDING,
-                stride=STRIDE,
-                padding_mode=PADDING_MODE,
-            ),
+            ConvexWaveletLens(device, 3, N),
             GDN(N, device),
             BatchNorm2d(N),
-            Conv2d(
-                N,
-                N,
-                kernel_size=KERNEL,
-                padding=PADDING,
-                stride=STRIDE,
-                padding_mode=PADDING_MODE,
-            ),
+            ConvexWaveletLens(device, N, N),
+            GDN(N, device),
+            BatchNorm2d(N),
+            ConvexWaveletLens(device, N, N),
+            GDN(N, device),
+            BatchNorm2d(N),
+            ConvexWaveletLens(device, N, N),
         )
-        self.__fdwt = FullDWT(decomposition_levels=DECOMPS, wavelet=WAVELET)
 
     def forward(self, x: Tensor) -> Tensor:
-        dwt = self.__fdwt(x)
-        return self.__model(dwt)
+        return self.__model(x)
 
 
 class Decoder(Module):
     def __init__(self, device: str) -> None:
         super().__init__()
         self.__model = Sequential(
-            ConvTranspose2d(
-                N, N, kernel_size=KERNEL + 1, padding=PADDING, stride=STRIDE
-            ),
+            ConcaveWaveletLens(device, N, N),
             GDN(N, device, inverse=True),
             BatchNorm2d(N),
-            ConvTranspose2d(
-                N, I, kernel_size=KERNEL + 1, padding=PADDING, stride=STRIDE
-            ),
+            ConcaveWaveletLens(device, N, N),
+            GDN(N, device, inverse=True),
+            BatchNorm2d(N),
+            ConcaveWaveletLens(device, N, N),
+            GDN(N, device, inverse=True),
+            BatchNorm2d(N),
+            ConcaveWaveletLens(device, N, 3),
+            Sigmoid(),
         )
-        self.__sigmoid = Sigmoid()
-        self.__ifdwt = FullIDWT(decomposition_levels=DECOMPS, wavelet=WAVELET)
 
     def forward(self, x: Tensor) -> Tensor:
-        return self.__sigmoid(self.__ifdwt(self.__model(x)))
+        return self.__model(x)
 
 
 class HyperEncoder(Module):
     def __init__(self) -> None:
         super().__init__()
         self.__model = Sequential(
-            Conv2d(N, N // 4, kernel_size=3, stride=1, padding=1),
+            Conv2d(N, N, kernel_size=5, stride=1),
             Wavelon(standard_mexican_hat_wavelet),
-            BatchNorm2d(N // 4),
-            Conv2d(N // 4, N // 16, kernel_size=3, stride=1, padding=1),
+            BatchNorm2d(N),
+            Conv2d(N, N, kernel_size=5, stride=1, padding=1),
             Wavelon(standard_mexican_hat_wavelet),
-            BatchNorm2d(N // 16),
-            Conv2d(N // 16, N // 64, kernel_size=3, stride=1, padding=1),
+            BatchNorm2d(N),
+            Conv2d(N, N, kernel_size=3, stride=2, padding=1),
         )
 
     def forward(self, x: Tensor) -> Tensor:
@@ -100,14 +133,16 @@ class HyperEncoder(Module):
 class HyperDecoder(Module):
     def __init__(self) -> None:
         super().__init__()
+        middle_channels = int(N * 1.5)
+        out_channels = int(N * 2)
         self.__model = Sequential(
-            ConvTranspose2d(N // 64, N // 16, kernel_size=3, stride=1, padding=1),
+            ConvTranspose2d(N, N, kernel_size=3, stride=2, padding=1),
             Wavelon(standard_mexican_hat_wavelet),
-            BatchNorm2d(N // 16),
-            ConvTranspose2d(N // 16, N // 2, kernel_size=3, stride=1, padding=1),
+            BatchNorm2d(N),
+            ConvTranspose2d(N, middle_channels, kernel_size=5, stride=1, padding=1),
             Wavelon(standard_mexican_hat_wavelet),
-            BatchNorm2d(N // 2),
-            ConvTranspose2d(N // 2, 2 * N, kernel_size=3, stride=1, padding=1),
+            BatchNorm2d(middle_channels),
+            ConvTranspose2d(middle_channels, out_channels, kernel_size=4, stride=2),
         )
 
     def forward(self, x: Tensor) -> Tensor:
@@ -155,7 +190,6 @@ LossFunction = TypeVar("LossFunction")
 class Network(Module):
     def __init__(
         self,
-        *,
         loss_function: LossFunction,
         device: str,
         quantization: Quantization | None = None,

@@ -16,7 +16,6 @@ from pytorch_gdn import GDN
 
 from gym.quantization import Quantization
 from gym.modules import MaskedConv2d
-
 from gym.config import get_config
 
 

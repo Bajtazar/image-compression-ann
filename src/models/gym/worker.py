@@ -1,14 +1,10 @@
 #!/usr/bin/env python3
-import os
-
 from gym.gym import Gym
 from gym.data_manager import DataManager
 from gym.loss_function import NormalDistributionRateDistortionLoss
-from gym.quantization import FuzzyQuantization, Quantization
+from gym.quantization import Quantization
 from gym.distributed import init_distributed, print_on_master
 from gym.config import get_config
-
-import torch
 
 
 def worker(is_distributed: bool) -> None:

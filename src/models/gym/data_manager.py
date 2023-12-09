@@ -1,16 +1,14 @@
 from torch import Tensor, device, cuda, uint8
 
-from torchvision.io import read_image, ImageReadMode, write_jpeg, write_png
+from torchvision.io import read_image, ImageReadMode, write_png
 
 from torch.utils.data import random_split, DataLoader
 from torch.utils.data.distributed import DistributedSampler
-from torch.distributed import barrier
 
 from dataclasses import dataclass
-from typing import TypeVar, Iterable, List, Tuple, Callable
+from typing import TypeVar, Iterable, Callable
 import os
 
-from gym.distributed import is_main_process
 from gym.jit_image_set import JitImageSet
 from gym.tiles import concatenate_image
 
@@ -105,7 +103,7 @@ class DataManager:
         for batch in self.__validation_loader:
             yield batch.cuda()
 
-    def test_set(self, epoch: int) -> Iterable[Tuple[Tensor, str]]:
+    def test_set(self, epoch: int) -> Iterable[tuple[Tensor, str]]:
         for i, batch in enumerate(self.__test_loader):
             path, _ = self.__test_dataset.cache[i]
             yield batch.cuda(), path.split("/" if "/" in path else "\\")[-1]
@@ -136,7 +134,7 @@ class DataManager:
         piece = piece_name.split(".")[-2]
         return int(piece.split("_")[-1])
 
-    def __get_ordered_pieces(self, catalog: str, file_name: str) -> List[Tensor]:
+    def __get_ordered_pieces(self, catalog: str, file_name: str) -> list[Tensor]:
         prefix = (".".join(file_name.split(".")[:-1])).split("/")[-1]
         pieces = [piece for piece in os.listdir(catalog) if piece.startswith(prefix)]
         pieces = list(sorted(pieces, key=self.__piece_key))

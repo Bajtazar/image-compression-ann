@@ -1,8 +1,7 @@
 from torch import Tensor, Size, zeros, float32, div, uint8
-from torch.nn.functional import pad
 
 from math import ceil
-from typing import Generator, Tuple, List
+from typing import Generator, Tuple
 
 
 def calculate_padding(
@@ -26,7 +25,7 @@ def calculate_number_of_rows_and_columns(
 
 
 def tile_sequencer(
-    chunks: List[Tensor],
+    chunks: list[Tensor],
     chunk_size: int,
     columns: int,
     padding: Tuple[int, int, int, int],
@@ -67,7 +66,7 @@ def apply_tiles(
     image: Tensor,
     weights: Tensor,
     size: Tuple[int, int],
-    chunks: List[Tensor],
+    chunks: list[Tensor],
     chunk_size: int,
     columns: int,
     padding: Tuple[int, int, int, int],
@@ -88,7 +87,7 @@ def apply_tiles(
 
 
 def concatenate_image(
-    chunks: List[Tensor], original_size: Size, overlay_size: int = 0
+    chunks: list[Tensor], original_size: Size, overlay_size: int = 0
 ) -> Tensor:
     chunk_size = chunks[0].size()[-1]
     height, width = original_size[-2:]

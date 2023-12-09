@@ -5,7 +5,6 @@ from torchvision.io import decode_image, ImageReadMode
 
 from gym.progress_bar import ProgressBar
 
-from typing import Optional, Callable
 import os
 
 import numpy as np

@@ -1,25 +1,15 @@
 from torch import (
     mean,
-    std,
     Tensor,
-    log,
-    zeros,
-    unique,
     sum as tensor_sum,
     log2,
     erf,
-    abs as tensor_abs,
     clamp,
 )
 from torch.nn.functional import mse_loss
 from torch.nn import Module
-from torch.autograd import Function
 
 from gym.config import get_config
-
-from dataclasses import dataclass
-
-from numpy import prod
 
 
 class NormalDistributionRateDistortionLoss(Module):

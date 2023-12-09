@@ -1,4 +1,4 @@
-from torch import Tensor, round as tensor_round, rand, device, float32
+from torch import Tensor, round as tensor_round
 from torch.nn import Module
 
 
@@ -15,17 +15,3 @@ class Quantization(Module):
         if is_training:
             return self.__quantize_training(vector)  # soft quantization
         return tensor_round(vector)  # hard quantization
-
-
-class FuzzyQuantization(Module):
-    def __init__(self, device: device) -> None:
-        super().__init__()
-        self.__device = device
-
-    def __fuzzy_quantization(self, vector: Tensor) -> Tensor:
-        return vector + (rand(vector.shape, dtype=float32) - 0.5).to(self.__device)
-
-    def forward(self, vector: Tensor, is_training: bool) -> Tensor:
-        if is_training:
-            return self.__fuzzy_quantization(vector)
-        return tensor_round(vector)

@@ -5,7 +5,7 @@ import pytorch_wavelets as wvlt
 from torch.nn.init import xavier_uniform_
 from torch.nn import Module, Conv2d, Parameter
 from torch.nn.functional import conv2d, conv_transpose2d, pad as torch_pad
-from torch import Tensor, cat, chunk, flatten, stack, ones, unbind
+from torch import Tensor, cat, chunk, flatten, stack, ones, unbind, empty
 
 import pywt
 
@@ -226,12 +226,12 @@ class CascadeDWT(Module):
         self.__decomposition_levels = decomposition_levels
         self.__dwt = wvlt.DWT(J=1, wave=wavelet)
 
-    def sample(self, x: Tensor, dimension: int) -> Tensor:
+    def __sample(self, x: Tensor) -> Tensor:
         s1 = x[..., ::2, ::2]
-        s2 = x[..., 1::2, ::2]
-        s3 = x[..., ::2, 1::2]
+        s2 = x[..., ::2, 1::2]
+        s3 = x[..., 1::2, ::2]
         s4 = x[..., 1::2, 1::2]
-        return cat((s1, s2, s3, s4), dim=dimension)
+        return cat((s1, s2, s3, s4), dim=1)
 
     def forward(self, x: Tensor) -> Tensor:
         channels = x.shape[1]
@@ -243,6 +243,49 @@ class CascadeDWT(Module):
             if iteration == 0:
                 x = ll_x
             else:
-                subsampled = self.sample(x[:, channels:, ...], dimension=1)
+                subsampled = self.__sample(x[:, channels:, ...])
                 x = cat((ll_x, subsampled), dim=1)
+            x = x.contiguous()
+        return x
+
+
+class CascadeIDWT(Module):
+    def __init__(self, decomposition_levels: int = 1, wavelet: str = "haar") -> None:
+        super().__init__()
+        self.__decomposition_levels = decomposition_levels
+        self.__idwt = wvlt.IDWT(wave=wavelet)
+
+    def __interleave_w(self, x: Tensor, y: Tensor) -> Tensor:
+        size = list(x.shape)
+        size[-1] += y.shape[-1]
+        tensor = empty(size)
+        tensor[..., ::2] = x
+        tensor[..., 1::2] = y
+        return tensor
+
+    def __interleave_h(self, x: Tensor, y: Tensor) -> Tensor:
+        size = list(x.shape)
+        size[-2] += y.shape[-2]
+        tensor = empty(size)
+        tensor[..., ::2, :] = x
+        tensor[..., 1::2, :] = y
+        return tensor
+
+    def __resample(self, x: Tensor) -> Tensor:
+        s1, s2, s3, s4 = chunk(x, 4, dim=1)
+        s_lower = self.__interleave_w(s1, s2)
+        s_upper = self.__interleave_w(s3, s4)
+        return self.__interleave_h(s_lower, s_upper)
+
+    def forward(self, x: Tensor) -> Tensor:
+        pivot = x.shape[1] // (4 ** (self.__decomposition_levels - 1))
+        for iteration in range(self.__decomposition_levels):
+            dwt_block = x[:, :pivot, ...].unflatten(1, (pivot // 4, 4))
+            ll, l1, l2, l3 = chunk(dwt_block, 4, dim=2)
+            x_recon = self.__idwt((ll.squeeze(2), [cat((l1, l2, l3), dim=2)]))
+            if iteration == self.__decomposition_levels - 1:
+                x = x_recon
+            else:
+                y_recon = self.__resample(x[:, pivot:, ...])
+                x = cat((x_recon, y_recon), dim=1)
         return x

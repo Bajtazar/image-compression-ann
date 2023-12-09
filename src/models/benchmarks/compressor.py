@@ -1,6 +1,15 @@
-from torch import Tensor, stack, int16, add, linspace, uint8, float32, erf, ones
-
-from PIL import Image
+from torch import (
+    Tensor,
+    stack,
+    int16,
+    add,
+    linspace,
+    uint8,
+    float32,
+    erf,
+    ones,
+    all as tensor_all,
+)
 
 from torchac import encode_float_cdf, decode_float_cdf
 
@@ -26,6 +35,8 @@ class Compressor:
         self.__shift = shift
         self.__min_symbol = min_symbol
         self.__max_symbol = max_symbol
+        assert tensor_all(self.__hyper_cdf[..., -1] == 1.0)
+        assert tensor_all(self.__hyper_cdf[..., 0] == 0.0)
 
     def append(
         self,
@@ -53,17 +64,16 @@ class Compressor:
         )
         assert hyperlatent_plane.min().item() >= 0
         assert hyperlatent_plane.max().item() <= self.__max_symbol - self.__min_symbol
-        ac_cdf = (
-            self.__hyper_cdf.expand(*hyperlatent_plane.shape, -1).to("cpu").detach()
+        ac_cdf = self.__hyper_cdf.expand(
+            [*hyperlatent_plane.shape[:2], *self.__hyper_cdf.shape]
         )
-        ac_cdf[..., -1] = 1.0
         compressed = encode_float_cdf(
             ac_cdf, hyperlatent_plane, needs_normalization=True
         )
-        assert (
+        assert tensor_all(
             decode_float_cdf(ac_cdf, compressed, needs_normalization=True)
             == hyperlatent_plane
-        ).min()
+        )
         return len(compressed)
 
     def __normal_distrib_cdf(

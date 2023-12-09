@@ -32,10 +32,14 @@ class TensorDistributionCalculator:
 
     def update(self, feature_vector: Tensor) -> TensorDistributionCalculator:
         # Not the fastest solution but uses much less RAM rather than tensor counter
-        range_ = product(*[range(i) for i in feature_vector.shape])
+        range_ = product(*[range(i) for i in feature_vector.shape[1:]])
+        batch_size = feature_vector.shape[0]
         for vertices in range_:
-            self.__calculator[vertices][int(feature_vector[*vertices].item())] += 1
-        self.__shape = feature_vector.shape
+            for b in range(batch_size):
+                self.__calculator[vertices][
+                    int(feature_vector[b, *vertices].item())
+                ] += 1
+        self.__shape = feature_vector.shape[1:]
         return self
 
     @property

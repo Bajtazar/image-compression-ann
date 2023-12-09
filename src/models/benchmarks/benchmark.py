@@ -1,13 +1,16 @@
 from __future__ import annotations
-from typing import TypeVar
+from typing import TypeVar, Iterable
 
 from gym.data_manager import DataManager
 from gym.progress_bar import ProgressBar
 
 from benchmarks.compressor import Compressor
-from benchmarks.distribution import DistributionCalculator, CdfDistributionCalculator
+from benchmarks.distribution import (
+    DistributionCalculator,
+    TensorDistributionCalculator,
+)
 
-from torch import no_grad, Size
+from torch import no_grad, Size, Tensor
 
 
 Model = TypeVar("Model")
@@ -19,64 +22,67 @@ class Benchmark:
         self.__model = model.to(data_manager.platform)
         self.__bar = ProgressBar()
 
-    def train_set_distribution(
-        self, quantization_step: float
-    ) -> tuple[Size, Size, DistributionCalculator, DistributionCalculator]:
+    def __set_distribution(
+        self, quantization_step: float, dataset_name: str, dataset: Iterable[Tensor]
+    ) -> tuple[
+        Size,
+        Size,
+        DistributionCalculator,
+        DistributionCalculator,
+        TensorDistributionCalculator,
+    ]:
         self.__model.eval()
         latent_shape, hyperlatent_shape = None, None
-        latent_distrib, hyperlatent_distrib = (
+        latent_distrib, hyperlatent_distrib, hyperlatent_tensor = (
             DistributionCalculator(),
             DistributionCalculator(),
+            TensorDistributionCalculator(),
         )
         with self.__bar.task(
-            "Training set distribution", total=self.__data_manager.training_set_len
+            f"{dataset_name} distribution", total=self.__data_manager.training_set_len
         ) as task:
             with no_grad():
-                for batch in self.__data_manager.training_set(None):
+                for batch in dataset:
                     (latent, hyperlatent, *_) = self.__model(batch, quantization_step)
                     latent_shape = list(latent.shape)
                     hyperlatent_shape = list(hyperlatent.shape)
                     latent_distrib.update(latent)
                     hyperlatent_distrib.update(hyperlatent)
+                    hyperlatent_tensor.update(hyperlatent)
                     task.update(1)
-        return latent_shape, hyperlatent_shape, latent_distrib, hyperlatent_distrib
+        return (
+            latent_shape,
+            hyperlatent_shape,
+            latent_distrib,
+            hyperlatent_distrib,
+            hyperlatent_tensor,
+        )
+
+    def train_set_distribution(
+        self, quantization_step: float
+    ) -> tuple[
+        Size,
+        Size,
+        DistributionCalculator,
+        DistributionCalculator,
+        TensorDistributionCalculator,
+    ]:
+        return self.__set_distribution(
+            quantization_step, "Train dataset", self.__data_manager.training_set(None)
+        )
 
     def test_set_distribution(
         self, quantization_step: float
-    ) -> tuple[Size, Size, DistributionCalculator, DistributionCalculator]:
-        self.__model.eval()
-        latent_shape, hyperlatent_shape = None, None
-        latent_distrib, hyperlatent_distrib = (
-            DistributionCalculator(),
-            DistributionCalculator(),
+    ) -> tuple[
+        Size,
+        Size,
+        DistributionCalculator,
+        DistributionCalculator,
+        TensorDistributionCalculator,
+    ]:
+        return self.__set_distribution(
+            quantization_step, "Test dataset", self.__data_manager.test_set(None)
         )
-        with self.__bar.task(
-            "Test set distribution", total=self.__data_manager.test_set_len
-        ) as task:
-            with no_grad():
-                for batch, _ in self.__data_manager.test_set(None):
-                    (latent, hyperlatent, *_) = self.__model(batch, quantization_step)
-                    latent_shape = list(latent.shape)
-                    hyperlatent_shape = list(hyperlatent.shape)
-                    latent_distrib.update(latent)
-                    hyperlatent_distrib.update(hyperlatent)
-                    task.update(1)
-        return latent_shape, hyperlatent_shape, latent_distrib, hyperlatent_distrib
-
-    def test_set_cdf_distribution(
-        self, quantization_step: float
-    ) -> tuple[CdfDistributionCalculator]:
-        self.__model.eval()
-        cdf_distribution = CdfDistributionCalculator()
-        with self.__bar.task(
-            "Test set cdf distribution", total=self.__data_manager.test_set_len
-        ) as task:
-            with no_grad():
-                for batch, _ in self.__data_manager.test_set(None):
-                    (*_, stddev, mean, _) = self.__model(batch, quantization_step)
-                    cdf_distribution.update(mean, stddev)
-                    task.update(1)
-        return cdf_distribution
 
     def benchmark_test_set(
         self, compressor: Compressor, quantization_step: float

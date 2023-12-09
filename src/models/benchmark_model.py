@@ -74,6 +74,7 @@ class NetworkStats:
             self.__stats["Hyperlatent shape"],
             latent_distrib,
             hyper_distrib,
+            hyperlatent_tesnor_distrib,
         ) = benchmark.train_set_distribution(quantization_step)
         self.__stats["Min latent symbol"] = latent_distrib.min_symbol
         self.__stats["Max latent symbol"] = latent_distrib.max_symbol
@@ -87,7 +88,7 @@ class NetworkStats:
             f"{self.__quant_path(quantization_step)}/hyperlatent.png",
             "Hyperlatent symbol distribution",
         )
-        return hyper_distrib.cumulative_distribution_function(
+        return hyperlatent_tesnor_distrib.cumulative_distribution_function(
             self.min_symbol, self.max_symbol
         )
 

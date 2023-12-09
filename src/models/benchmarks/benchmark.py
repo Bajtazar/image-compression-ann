@@ -1,17 +1,13 @@
 from __future__ import annotations
 from typing import TypeVar
-import os
 
-from gym.data_manager import DataManager, DataLoader
-from gym.network_loader import Network
+from gym.data_manager import DataManager
 from gym.progress_bar import ProgressBar
 
 from benchmarks.compressor import Compressor
 from benchmarks.distribution import DistributionCalculator, CdfDistributionCalculator
 
-from torch import no_grad, unique, load, Tensor, tensor, float32, Size
-
-import numpy as np
+from torch import no_grad, Size
 
 
 Model = TypeVar("Model")

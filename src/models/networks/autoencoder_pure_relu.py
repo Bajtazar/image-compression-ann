@@ -9,21 +9,14 @@ from torch.nn import (
     Sequential,
     ConvTranspose2d,
     Sigmoid,
-    Flatten,
-    Unflatten,
-    Linear,
-    BatchNorm1d,
 )
-from torch.nn import Conv3d, ConvTranspose3d, Softplus
-from torch import Tensor, unbind, flatten, cat, chunk, stack, split, clamp
-
-import pytorch_wavelets as wvlt
+from torch.nn import ReLU
+from torch import Tensor, cat, split
 
 from pytorch_gdn import GDN
 
 from gym.quantization import Quantization
-from gym.modules import FullDWT, FullIDWT, Squeeze, Unsqueeze, MaskedConv2d, Wavelon
-from gym.wavelets import standard_mexican_hat_wavelet
+from gym.modules import MaskedConv2d
 
 from gym.config import get_config
 
@@ -177,11 +170,11 @@ class EntropyParameters(Module):
             BatchNorm2d(l2_channels),
             Conv2d(l2_channels, out_channels, kernel_size=1),
         )
-        self.__softplus = Softplus()
+        self.__relu = ReLU()
 
     def forward(self, x: Tensor, shape: int) -> tuple[Tensor, Tensor]:
         stddev, mean = split(self.__model(x), shape, dim=1)
-        return self.__softplus(stddev) + self.__min_stddev, mean
+        return self.__relu(stddev) + self.__min_stddev, mean
 
 
 LossFunction = TypeVar("LossFunction")

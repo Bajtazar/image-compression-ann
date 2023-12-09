@@ -5,8 +5,7 @@ import pytorch_wavelets as wvlt
 from torch.nn.init import xavier_uniform_
 from torch.nn import Module, Conv2d, Parameter
 from torch.nn.functional import conv2d, conv_transpose2d, pad as torch_pad
-from torch import Tensor, cat, chunk, flatten, stack, empty, ones, unbind
-from torch.autograd import Function
+from torch import Tensor, cat, chunk, flatten, stack, ones, unbind
 
 import pywt
 
@@ -218,4 +217,32 @@ class FullIDWT(Module):
             x = x.unflatten(1, (int(x.shape[1] / 4), 4))
             ll, l1, l2, l3 = chunk(x, 4, dim=2)
             x = self.__idwt((ll.squeeze(2), [cat((l1, l2, l3), dim=2)]))
+        return x
+
+
+class CascadeDWT(Module):
+    def __init__(self, decomposition_levels: int = 1, wavelet: str = "haar") -> None:
+        super().__init__()
+        self.__decomposition_levels = decomposition_levels
+        self.__dwt = wvlt.DWT(J=1, wave=wavelet)
+
+    def sample(self, x: Tensor, dimension: int) -> Tensor:
+        s1 = x[..., ::2, ::2]
+        s2 = x[..., 1::2, ::2]
+        s3 = x[..., ::2, 1::2]
+        s4 = x[..., 1::2, 1::2]
+        return cat((s1, s2, s3, s4), dim=dimension)
+
+    def forward(self, x: Tensor) -> Tensor:
+        channels = x.shape[1]
+        for iteration in range(self.__decomposition_levels):
+            # decompose only the last ll channels
+            ll, lh = self.__dwt(x[:, :channels, ...])
+            (lh,) = lh
+            ll_x = cat((ll.unsqueeze(2), lh), dim=2).flatten(1, 2)
+            if iteration == 0:
+                x = ll_x
+            else:
+                subsampled = self.sample(x[:, channels:, ...], dimension=1)
+                x = cat((ll_x, subsampled), dim=1)
         return x

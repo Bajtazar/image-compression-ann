@@ -170,8 +170,8 @@ class EntropyParameters(Module):
         )
 
     def forward(self, x: Tensor, shape: int) -> tuple[Tensor, Tensor]:
-        stddev = split(self.__model(x), shape, dim=1)
-        return clamp(exp(stddev), min=self.__min_stddev)
+        stddev, mean = split(self.__model(x), shape, dim=1)
+        return clamp(exp(stddev), min=self.__min_stddev), mean
 
 
 LossFunction = TypeVar("LossFunction")

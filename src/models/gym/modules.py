@@ -258,7 +258,7 @@ class CascadeIDWT(Module):
     def __interleave_w(self, x: Tensor, y: Tensor) -> Tensor:
         size = list(x.shape)
         size[-1] += y.shape[-1]
-        tensor = empty(size)
+        tensor = empty(size, device=x.device)
         tensor[..., ::2] = x
         tensor[..., 1::2] = y
         return tensor
@@ -266,7 +266,7 @@ class CascadeIDWT(Module):
     def __interleave_h(self, x: Tensor, y: Tensor) -> Tensor:
         size = list(x.shape)
         size[-2] += y.shape[-2]
-        tensor = empty(size)
+        tensor = empty(size, device=x.device)
         tensor[..., ::2, :] = x
         tensor[..., 1::2, :] = y
         return tensor

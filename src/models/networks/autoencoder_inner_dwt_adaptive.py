@@ -9,7 +9,7 @@ from torch.nn import (
     ConvTranspose2d,
     Sigmoid,
 )
-from torch.nn import Conv3d, ConvTranspose3d, Softplus
+from torch.nn import Conv3d, ConvTranspose3d, Softplus, LeakyReLU
 from torch import Tensor, cat, split
 
 from pytorch_gdn import GDN
@@ -21,9 +21,7 @@ from gym.modules import (
     Squeeze,
     Unsqueeze,
     MaskedConv2d,
-    Wavelon,
 )
-from gym.wavelets import standard_mexican_hat_wavelet
 from gym.config import get_config
 
 
@@ -118,10 +116,10 @@ class HyperEncoder(Module):
         super().__init__()
         self.__model = Sequential(
             Conv2d(N, N, kernel_size=5, stride=1),
-            Wavelon(standard_mexican_hat_wavelet),
+            LeakyReLU(0.2),
             BatchNorm2d(N),
             Conv2d(N, N, kernel_size=5, stride=1, padding=1),
-            Wavelon(standard_mexican_hat_wavelet),
+            LeakyReLU(0.2),
             BatchNorm2d(N),
             Conv2d(N, N, kernel_size=3, stride=2, padding=1),
         )
@@ -137,10 +135,10 @@ class HyperDecoder(Module):
         out_channels = int(N * 2)
         self.__model = Sequential(
             ConvTranspose2d(N, N, kernel_size=3, stride=2, padding=1),
-            Wavelon(standard_mexican_hat_wavelet),
+            LeakyReLU(0.2),
             BatchNorm2d(N),
             ConvTranspose2d(N, middle_channels, kernel_size=5, stride=1, padding=1),
-            Wavelon(standard_mexican_hat_wavelet),
+            LeakyReLU(0.2),
             BatchNorm2d(middle_channels),
             ConvTranspose2d(middle_channels, out_channels, kernel_size=4, stride=2),
         )
@@ -170,10 +168,10 @@ class EntropyParameters(Module):
         out_channels = int(2 * N)
         self.__model = Sequential(
             Conv2d(in_channels, l1_channels, kernel_size=1),
-            Wavelon(standard_mexican_hat_wavelet),
+            LeakyReLU(0.2),
             BatchNorm2d(l1_channels),
             Conv2d(l1_channels, l2_channels, kernel_size=1),
-            Wavelon(standard_mexican_hat_wavelet),
+            LeakyReLU(0.2),
             BatchNorm2d(l2_channels),
             Conv2d(l2_channels, out_channels, kernel_size=1),
         )

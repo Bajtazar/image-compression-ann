@@ -23,7 +23,7 @@ from torch import Tensor, uint8
 from torchvision.io import write_png
 
 
-QUANTIZATION_STEPS: list[float] = [1, 2, 5, 10]
+QUANTIZATION_STEPS: list[float] = [1, 1.2, 1.5, 2, 3, 4, 5, 8, 10, 12, 16]
 
 
 @dataclass

@@ -47,7 +47,7 @@ class NetworkStats:
             workers=int(config["environment"]["workers"]),
             distributed=False,
         )
-        self.__autoencoder, self.__first_epoch = load_network(
+        self.__autoencoder, _ = load_network(
             NormalDistributionRateDistortionLoss,
             Quantization(),
             self.__manager.platform,
@@ -139,6 +139,7 @@ class NetworkStats:
         plt.title(f"{stat_name} -> {self.network_run_path}")
         plt.xlabel("bpp")
         plt.ylabel(stat_name)
+        plt.xlim(min(bpp), max(bpp))
         plt.savefig(f"{self.__target_path}/{stat_name}.png")
 
     def plot_average_stats(self) -> None:

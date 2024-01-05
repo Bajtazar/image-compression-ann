@@ -94,13 +94,13 @@ class MaskedConv2d(Conv2d):
         return super(MaskedConv2d, self).forward(x)
 
 
-class Wavelon(Module):
-    def __init__(self, wavelet: callable) -> None:
+class ActivationFunction(Module):
+    def __init__(self, function: callable) -> None:
         super().__init__()
-        self.__wavelet = wavelet
+        self.__function = function
 
     def forward(self, x: Tensor) -> Tensor:
-        return self.__wavelet(x)
+        return self.__function(x)
 
 
 class AdaptiveDWT(Module):

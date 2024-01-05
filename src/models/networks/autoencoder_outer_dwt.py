@@ -15,7 +15,7 @@ from torch import Tensor, cat, split
 from pytorch_gdn import GDN
 
 from gym.quantization import Quantization
-from gym.modules import FullDWT, FullIDWT, MaskedConv2d, Wavelon
+from gym.modules import FullDWT, FullIDWT, MaskedConv2d, ActivationFunction
 from gym.wavelets import standard_mexican_hat_wavelet
 from gym.config import get_config
 
@@ -85,10 +85,10 @@ class HyperEncoder(Module):
         super().__init__()
         self.__model = Sequential(
             Conv2d(N, N // 4, kernel_size=3, stride=1, padding=1),
-            Wavelon(standard_mexican_hat_wavelet),
+            ActivationFunction(standard_mexican_hat_wavelet),
             BatchNorm2d(N // 4),
             Conv2d(N // 4, N // 16, kernel_size=3, stride=1, padding=1),
-            Wavelon(standard_mexican_hat_wavelet),
+            ActivationFunction(standard_mexican_hat_wavelet),
             BatchNorm2d(N // 16),
             Conv2d(N // 16, N // 64, kernel_size=3, stride=1, padding=1),
         )
@@ -102,10 +102,10 @@ class HyperDecoder(Module):
         super().__init__()
         self.__model = Sequential(
             ConvTranspose2d(N // 64, N // 16, kernel_size=3, stride=1, padding=1),
-            Wavelon(standard_mexican_hat_wavelet),
+            ActivationFunction(standard_mexican_hat_wavelet),
             BatchNorm2d(N // 16),
             ConvTranspose2d(N // 16, N // 2, kernel_size=3, stride=1, padding=1),
-            Wavelon(standard_mexican_hat_wavelet),
+            ActivationFunction(standard_mexican_hat_wavelet),
             BatchNorm2d(N // 2),
             ConvTranspose2d(N // 2, 2 * N, kernel_size=3, stride=1, padding=1),
         )
@@ -135,10 +135,10 @@ class EntropyParameters(Module):
         out_channels = int(2 * N)
         self.__model = Sequential(
             Conv2d(in_channels, l1_channels, kernel_size=1),
-            Wavelon(standard_mexican_hat_wavelet),
+            ActivationFunction(standard_mexican_hat_wavelet),
             BatchNorm2d(l1_channels),
             Conv2d(l1_channels, l2_channels, kernel_size=1),
-            Wavelon(standard_mexican_hat_wavelet),
+            ActivationFunction(standard_mexican_hat_wavelet),
             BatchNorm2d(l2_channels),
             Conv2d(l2_channels, out_channels, kernel_size=1),
         )

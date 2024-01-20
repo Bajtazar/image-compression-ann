@@ -24,11 +24,11 @@ KODAK_DATASET_DIR: str = "kodak"
 
 @redirect_stdout_to_logger()
 def create_intermediate_flickr30k_set(
-    raw_dataset_path: str,
-    intermediate_dataset_path: str,
+    raw_datasets_path: str,
+    intermediate_datasets_path: str,
     intermediate_flickr_size: int = 10_000,
 ) -> None:
-    raw_path = f"{raw_dataset_path}/{FLICKR_RAW_DATASET_DIR}"
+    raw_path = f"{raw_datasets_path}/{FLICKR_RAW_DATASET_DIR}"
     files = [
         file_path
         for file_path in chain(*[file_ for *_, file_ in walk(raw_path)])
@@ -37,7 +37,7 @@ def create_intermediate_flickr30k_set(
     for file_path in sample(files, intermediate_flickr_size):
         copyfile(
             f"{raw_path}/{file_path}",
-            f"{intermediate_dataset_path}/{FLICKR_DATASET_DIR}/{file_path}",
+            f"{intermediate_datasets_path}/{FLICKR_DATASET_DIR}/{file_path}",
         )
         get_current_logger().info(f"Copying the {file_path}")
 
@@ -48,19 +48,19 @@ def prepate_dir(directory: str) -> None:
     makedirs(directory, exist_ok=True)
 
 
-def prepare_flickr30k(intermediate_dataset_path: str) -> None:
+def prepare_flickr30k(intermediate_datasets_path: str) -> None:
     get_current_logger().info("Destroying old flickr30k intermediate dataset")
-    prepate_dir(f"{intermediate_dataset_path}/{FLICKR_DATASET_DIR}")
+    prepate_dir(f"{intermediate_datasets_path}/{FLICKR_DATASET_DIR}")
 
 
-def prepare_liu4k(intermediate_dataset_path: str) -> None:
+def prepare_liu4k(intermediate_datasets_path: str) -> None:
     get_current_logger().info("Destroying old LIU4K intermediate dataset")
-    prepate_dir(f"{intermediate_dataset_path}/{LIU4K_DATASET_DIR}")
+    prepate_dir(f"{intermediate_datasets_path}/{LIU4K_DATASET_DIR}")
 
 
-def prepare_kodak(processed_dataset_path: str) -> None:
+def prepare_kodak(processed_datasets_path: str) -> None:
     get_current_logger().info("Destroying old Kodak processed dataset")
-    prepate_dir(f"{processed_dataset_path}/{KODAK_DATASET_DIR}")
+    prepate_dir(f"{processed_datasets_path}/{KODAK_DATASET_DIR}")
 
 
 def new_dimensions(width: int, height: int, limit: int = 1200) -> tuple[int, int]:
@@ -71,10 +71,10 @@ def new_dimensions(width: int, height: int, limit: int = 1200) -> tuple[int, int
 
 @redirect_stdout_to_logger()
 def create_intermediate_liu4k_set(
-    raw_dataset_path: str, intermediate_dataset_path: str
+    raw_datasets_path: str, intermediate_datasets_path: str
 ) -> None:
-    int_path = f"{intermediate_dataset_path}/{LIU4K_DATASET_DIR}"
-    for root, _, files in walk(f"{raw_dataset_path}/{LIU4K_DATASET_DIR}"):
+    int_path = f"{intermediate_datasets_path}/{LIU4K_DATASET_DIR}"
+    for root, _, files in walk(f"{raw_datasets_path}/{LIU4K_DATASET_DIR}"):
         for file_path in files:
             if ".png" not in file_path:
                 continue
@@ -105,42 +105,42 @@ def split_dataset(
 
 
 @click.command()
-@click.argument("raw_dataset_path", type=click.Path())
-@click.argument("intermediate_dataset_path", type=click.Path())
-@click.argument("processed_dataset_path", type=click.Path())
+@click.argument("raw_datasets_path", type=click.Path())
+@click.argument("intermediate_datasets_path", type=click.Path())
+@click.argument("processed_datasets_path", type=click.Path())
 @click.option("--block_size", type=int, default=128)
 @click.option("--block_overlap_size", type=int, default=0)
 @click.option("--intermediate_flickr_size", type=int, default=10_000)
 def main(
-    raw_dataset_path: str,
-    intermediate_dataset_path: str,
-    processed_dataset_path: str,
+    raw_datasets_path: str,
+    intermediate_datasets_path: str,
+    processed_datasets_path: str,
     block_size: int,
     block_overlap_size: int,
     intermediate_flickr_size: int,
 ) -> None:
-    prepare_flickr30k(intermediate_dataset_path)
+    prepare_flickr30k(intermediate_datasets_path)
     create_intermediate_flickr30k_set(
-        raw_dataset_path, intermediate_dataset_path, intermediate_flickr_size
+        raw_datasets_path, intermediate_datasets_path, intermediate_flickr_size
     )
     split_dataset(
-        f"{intermediate_dataset_path}/{FLICKR_DATASET_DIR}",
-        f"{processed_dataset_path}/{FLICKR_DATASET_DIR}",
+        f"{intermediate_datasets_path}/{FLICKR_DATASET_DIR}",
+        f"{processed_datasets_path}/{FLICKR_DATASET_DIR}",
         block_size,
         block_overlap_size,
     )
-    prepare_liu4k(intermediate_dataset_path)
-    create_intermediate_liu4k_set(raw_dataset_path, intermediate_dataset_path)
+    prepare_liu4k(intermediate_datasets_path)
+    create_intermediate_liu4k_set(raw_datasets_path, intermediate_datasets_path)
     split_dataset(
-        f"{intermediate_dataset_path}/{LIU4K_DATASET_DIR}",
-        f"{processed_dataset_path}/{LIU4K_DATASET_DIR}",
+        f"{intermediate_datasets_path}/{LIU4K_DATASET_DIR}",
+        f"{processed_datasets_path}/{LIU4K_DATASET_DIR}",
         block_size,
         block_overlap_size,
     )
-    prepare_kodak(processed_dataset_path)
+    prepare_kodak(processed_datasets_path)
     split_dataset(
-        f"{raw_dataset_path}/{KODAK_DATASET_DIR}",
-        f"{processed_dataset_path}/{KODAK_DATASET_DIR}",
+        f"{raw_datasets_path}/{KODAK_DATASET_DIR}",
+        f"{processed_datasets_path}/{KODAK_DATASET_DIR}",
         block_size,
         block_overlap_size,
     )

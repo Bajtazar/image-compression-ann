@@ -47,7 +47,8 @@ class Compressor:
         reconstruction: Tensor,
         origin: str,
     ) -> None:
-        origin, index = origin.split("_")
+        (*origin, index) = origin.split("_")
+        origin = '_'.join(origin)
         index = int(index.split(".")[0])
         self.__network_recon[origin][index] = {
             "hyperlatent": hyperlatent,

@@ -53,8 +53,9 @@ class NetworkStats:
             self.__manager.platform,
             self.network_run_path,
         )
+        test_path = config["datasets"]["test"].split("/")[-1]
         self.__stats = defaultdict(lambda: defaultdict(dict))
-        self.__target_path = f"{self.network_run_path}/benchmarks"
+        self.__target_path = f"{self.network_run_path}/benchmarks-{test_path}"
         makedirs(self.__target_path, exist_ok=True)
 
     def __average_stats(self, quantization_step: float) -> None:

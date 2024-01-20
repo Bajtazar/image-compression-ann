@@ -28,11 +28,10 @@ from typing import Callable
 
 class Compressor:
     def __init__(
-        self, hyper_cdf: Tensor, shift: int, min_symbol: int, max_symbol: int
+        self, hyper_cdf: Tensor, min_symbol: int, max_symbol: int
     ) -> None:
         self.__network_recon = defaultdict(dict)
         self.__hyper_cdf = hyper_cdf
-        self.__shift = shift
         self.__min_symbol = min_symbol
         self.__max_symbol = max_symbol
         assert tensor_all(self.__hyper_cdf[..., -1] == 1.0)
@@ -61,7 +60,7 @@ class Compressor:
     def __factorized_step(self, hyperlatents: list[Tensor]) -> bytes:
         hyperlatent_plane = stack(hyperlatents)
         hyperlatent_plane = (
-            add(hyperlatent_plane, self.__shift).to(int16).to("cpu").detach()
+            add(hyperlatent_plane, -self.__min_symbol).to(int16).to("cpu").detach()
         )
         assert hyperlatent_plane.min().item() >= 0
         assert hyperlatent_plane.max().item() <= self.__max_symbol - self.__min_symbol
@@ -104,7 +103,7 @@ class Compressor:
         latent_plate = stack(latent)
         mean_plane = stack(latent_mean)
         stddev_plane = stack(latent_stddev)
-        latent_plate = add(latent_plate, self.__shift).to(int16).to("cpu").detach()
+        latent_plate = add(latent_plate, -self.__min_symbol).to(int16).to("cpu").detach()
         assert latent_plate.min().item() >= 0
         assert latent_plate.max().item() <= self.__max_symbol - self.__min_symbol
         cdf = self.__normal_distrib_cdf(mean_plane, stddev_plane, quantization_step)

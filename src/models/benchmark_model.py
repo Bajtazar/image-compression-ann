@@ -29,9 +29,8 @@ QUANTIZATION_STEPS: list[float] = [1, 1.2, 1.5, 2, 3, 4, 5, 8, 10, 12, 16]
 @dataclass
 class NetworkStats:
     network_run_path: str
-    min_symbol: int = -1023
-    max_symbol: int = 1024
-    shift: int = 1023
+    min_symbol: int = -255
+    max_symbol: int = 256
 
     def __post_init__(self) -> None:
         config = get_config()
@@ -109,7 +108,6 @@ class NetworkStats:
             hyper_cdf = self.__distributions(benchmark, quantization_step)
             compressor = Compressor(
                 hyper_cdf,
-                shift=self.shift,
                 min_symbol=self.min_symbol,
                 max_symbol=self.max_symbol,
             )

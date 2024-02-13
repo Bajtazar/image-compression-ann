@@ -19,7 +19,9 @@ class NormalDistributionRateDistortionLoss(Module):
         self.__epsilon = float(get_config()["network"]["epsilon"])
 
     @staticmethod
-    def __normal_distribution_cdf(mean_: Tensor, standard_deviation: Tensor, points: Tensor) -> Tensor:
+    def __normal_distribution_cdf(
+        mean_: Tensor, standard_deviation: Tensor, points: Tensor
+    ) -> Tensor:
         return (1.0 + erf((points - mean_) / ((2.0**0.5) * standard_deviation))) / 2.0
 
     @staticmethod

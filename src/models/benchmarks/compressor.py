@@ -27,9 +27,7 @@ from typing import Callable
 
 
 class Compressor:
-    def __init__(
-        self, hyper_cdf: Tensor, min_symbol: int, max_symbol: int
-    ) -> None:
+    def __init__(self, hyper_cdf: Tensor, min_symbol: int, max_symbol: int) -> None:
         self.__network_recon = defaultdict(dict)
         self.__hyper_cdf = hyper_cdf
         self.__min_symbol = min_symbol
@@ -47,7 +45,7 @@ class Compressor:
         origin: str,
     ) -> None:
         (*origin, index) = origin.split("_")
-        origin = '_'.join(origin)
+        origin = "_".join(origin)
         index = int(index.split(".")[0])
         self.__network_recon[origin][index] = {
             "hyperlatent": hyperlatent,
@@ -103,7 +101,9 @@ class Compressor:
         latent_plate = stack(latent)
         mean_plane = stack(latent_mean)
         stddev_plane = stack(latent_stddev)
-        latent_plate = add(latent_plate, -self.__min_symbol).to(int16).to("cpu").detach()
+        latent_plate = (
+            add(latent_plate, -self.__min_symbol).to(int16).to("cpu").detach()
+        )
         assert latent_plate.min().item() >= 0
         assert latent_plate.max().item() <= self.__max_symbol - self.__min_symbol
         cdf = self.__normal_distrib_cdf(mean_plane, stddev_plane, quantization_step)

@@ -103,6 +103,7 @@ class ActivationFunction(Module):
         return self.__function(x)
 
 
+### Modified DWT class from pytorch-dwt
 class AdaptiveDWT(Module):
     """This class is a rework of the pytorch dwt's DWT with learnable filters"""
 
@@ -153,6 +154,7 @@ class AdaptiveDWT(Module):
         return y.reshape(shape[0], -1, 4, shape[-2], shape[-1])
 
 
+### Modified IDWT class from pytorch-dwt
 class AdaptiveIDWT(Module):
     """This class is a rework of the pytorch dwt's IDWT with learnable filters"""
 

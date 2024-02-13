@@ -1,7 +1,7 @@
 Image compression using artificial neural networks and discrete wavelet transform
 ==============================
 
-Bachelor Thesis utilizing an artifical neural networks and discrete wavelet transform in order to achieve state-of-the-art lossy image compression
+Bachelor Thesis utilizing an artifical neural networks and discrete wavelet transform in order to implement a lossy image compression codec. Project based on paper "[Variational image compression with a scale hyperprior](https://arxiv.org/abs/1802.01436)"
 
 Project Organization
 ------------
@@ -14,15 +14,10 @@ Project Organization
     │   ├── interim        <- Intermediate data that has been transformed.
     │   └── raw            <- The original, immutable data dump.
     │
-    ├── docs               <- A default Sphinx project; see sphinx-doc.org for details
-    │
     ├── external           <- Python dependencies that cannot be installed via package manager
     │
     ├── models             <- Trained and serialized models, model predictions, or model summaries
     │   └── models.csv     <- File that translates training session id to the model params
-    │
-    ├── references         <- Data dictionaries, manuals, and all other explanatory materials.
-    │
     │
     ├── requirements.txt   <- The requirements file for reproducing the analysis environment, e.g.
     │                         generated with `pip freeze > requirements.txt`
@@ -37,22 +32,18 @@ Project Organization
     │   ├── features       <- Scripts to turn raw data into features for modeling
     │   │   └── build_features.py
     │   │
-    │   ├── models         <- Scripts to train models and then use trained models to make benchmarks
-    │   │   │
-    │   │   ├── networks   <- module with different neural network architectures
-    │   │   ├── gym        <- module with neural network training suite
-    │   │   ├── benchmarks <- module with neural network benchmarking suite
-    │   │   ├── benchmark_model.py
-    │   │   ├── train_model.py
-    │   │   └── update_config.py
-    │   │
-    │   └── visualization  <- Scripts to create exploratory and results oriented visualizations
-    │       └── visualize.py
-    │
+    │   └── models         <- Scripts to train models and then use trained models to make benchmarks
+    │       │
+    │       ├── networks   <- module with different neural network architectures
+    │       ├── gym        <- module with neural network training suite
+    │       ├── benchmarks <- module with neural network benchmarking suite
+    │       ├── benchmark_model.py
+    │       ├── train_model.py
+    │       └── update_config.py
+    |
     ├── tox.ini            <- tox file with settings for running tox; see tox.readthedocs.io
     │
     └── config.ini         <- configuration file with the current network params
-
 
 --------
 
